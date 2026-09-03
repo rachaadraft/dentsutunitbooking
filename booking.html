@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ระบบจองยูนิตคลินิก | สำนักวิชาทันตแพทยศาสตร์ มทส.</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#faf6f8;--line:#e8d9e0;--text:#2a1220;--muted:#8a6e7c;
+ --w900:#2f0718;--w800:#430d24;--w700:#5c1035;--w600:#761a45;--w400:#b06a8c;--w100:#f6e7ee;--w50:#fdf7fa;
+ --green:#15803d;--yellow:#ca8a04;--red:#c81e2b;
+ --grey:#eceaee;--grey-t:#a9a2ae;
+ --sh:0 1px 2px rgba(47,7,24,.06),0 6px 20px rgba(47,7,24,.08)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.6}
+button,input,select,textarea{font-family:inherit;font-size:15px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 70px}
+.spacer{flex:1}
+#err{display:none;background:#fef2f2;color:#8f1220;border:1px solid #f3c9cd;padding:12px;margin:12px;border-radius:10px;font-size:13.5px}
+header{background:linear-gradient(100deg,var(--w900),var(--w600));position:sticky;top:0;z-index:40;box-shadow:0 2px 14px rgba(47,7,24,.3)}
+.hd{max-width:1120px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px;color:#fff}
+.logo{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.34);display:grid;place-items:center;font-weight:700;font-size:13px}
+.hd h1{font-size:16.5px;margin:0;font-weight:600}
+.hd p{margin:0;font-size:12px;opacity:.82}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:500;white-space:nowrap;transition:.15s}
+.btn:hover{background:var(--w50);border-color:var(--w400)}
+.btn.primary{background:var(--w700);border-color:var(--w700);color:#fff}
+.btn.primary:hover{background:var(--w800)}
+.btn.line{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:#fff}
+.btn.line:hover{background:rgba(255,255,255,.28)}
+.btn.danger{color:var(--red);border-color:#f3c9cd}.btn.danger:hover{background:#fef2f2}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 11px;font-size:13.5px;border-radius:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:18px;margin-top:18px}
+.card h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--w800)}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.hint{font-size:12.5px;color:var(--muted)}
+
+/* ---------- ปฏิทิน : หัวตาราง + ช่องวันที่ อยู่ใน grid เดียวกัน ---------- */
+.cal-top{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;position:relative}
+.cal-title{font-size:22px;font-weight:700;color:var(--w800);min-width:210px;text-align:center}
+.nav{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px;color:var(--w700);line-height:1}
+.nav:hover{background:var(--w100);border-color:var(--w400)}
+.cal-top .today-btn{position:absolute;right:0}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);gap:1px}
+.wk{background:var(--w100);text-align:center;padding:10px 2px;font-size:13px;font-weight:600;color:var(--w800)}
+.wk.off{color:var(--grey-t)}
+.cell{min-height:112px;background:#fff;padding:6px 7px 8px;cursor:pointer;display:flex;flex-direction:column;gap:3px;position:relative;transition:background .12s;overflow:hidden}
+.cell:hover{background:var(--w50)}
+.cell.out{background:#fcf9fb}.cell.out .num{color:#d9cbd3}
+.cell.today .num{background:var(--w700);color:#fff}
+.cell.sel{background:var(--w100);box-shadow:inset 0 0 0 2px var(--w700)}
+.cell.off{background:var(--grey);cursor:not-allowed}
+.cell.off:hover{background:var(--grey)}
+.cell.off .num{color:var(--grey-t)}
+.num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:14.5px;color:var(--w800)}
+.ev{font-size:10.5px;line-height:1.45;padding:2px 6px;border-radius:5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev.am{background:#f7e3ec;color:var(--w700)}
+.ev.pm{background:#ece0f2;color:#5b2a72}
+.cnt{font-size:10px;color:var(--muted);margin-top:auto}
+.lk{position:absolute;top:7px;right:7px;font-size:11px;opacity:.7}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:12px;align-items:center}
+.legend span{display:flex;align-items:center;gap:6px}
+
+/* ---------- รายวัน ---------- */
+.tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+.tab{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500}
+.tab.on{background:var(--w700);color:#fff;border-color:var(--w700)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500}
+.chip:hover{border-color:var(--w400)}
+.chip.on{background:var(--w900);color:#fff;border-color:var(--w900)}
+.chip small{opacity:.65;font-weight:400}
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;margin-top:14px}
+.unit{border-radius:12px;padding:14px;background:#fff;cursor:pointer;border:2px solid;transition:.15s}
+.unit:hover{transform:translateY(-1px);box-shadow:var(--sh)}
+.unit .no{font-size:22px;font-weight:700}
+.unit .st{display:flex;align-items:center;gap:6px;font-size:13px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.u-free{border-color:var(--green);background:#f5fdf8}.u-free .dot{background:var(--green)}
+.u-pend{border-color:var(--yellow);background:#fffdf3}.u-pend .dot{background:var(--yellow)}
+.u-book{border-color:var(--red);background:#fff7f8}.u-book .dot{background:var(--green)}
+.unit .who{font-size:12.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
+th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-space:nowrap}
+.badge{display:inline-block;font-size:12.5px;padding:2px 9px;border-radius:20px;font-weight:500}
+.b-ok{background:#dcfce7;color:#14532d}.b-wait{background:#fef9c3;color:#713f12}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+
+/* ---------- modal ---------- */
+.mask{position:fixed;inset:0;background:rgba(42,18,32,.55);display:none;z-index:100;align-items:flex-start;justify-content:center;padding:26px 14px;overflow:auto}
+.mask.on{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(42,18,32,.35)}
+.mh{padding:18px 22px 2px}.mh h2{margin:0;font-size:17px;color:var(--w800)}
+.mb{padding:8px 22px 18px}
+.mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.f{margin-bottom:12px}
+.f label{display:block;font-size:13.5px;font-weight:500;margin-bottom:5px}
+.req{color:var(--red)}
+.inp{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.inp:focus{outline:none;border-color:var(--w700);box-shadow:0 0 0 3px var(--w100)}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rp{display:grid;grid-template-columns:118px 1fr;gap:8px}
+.note{background:var(--w50);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--w800)}
+.note.lock{background:#fef2f2;border-color:#f3c9cd;color:#8f1220}
+.hist{max-height:130px;overflow:auto;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.chk{display:flex;flex-wrap:wrap;gap:8px}
+.chk label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;background:#fff;font-size:14px}
+.chk label:has(input:checked){border-color:var(--w700);background:var(--w100)}
+@media(max-width:760px){.r2{grid-template-columns:1fr}.cell{min-height:74px;padding:4px}.ev{font-size:9px;padding:1px 4px}.num{width:24px;height:24px;font-size:13px}.cnt{display:none}.cal-title{font-size:18px;min-width:150px}.hd h1{font-size:14px}.hd p{display:none}}
+</style>
+</head>
+<body>
+<div id="err"></div>
+
+<header><div class="hd">
+  <div class="logo">SUT</div>
+  <div><h1>ระบบจองยูนิตปฏิบัติงานคลินิก</h1>
+    <p>สำนักวิชาทันตแพทยศาสตร์ มหาวิทยาลัยเทคโนโลยีสุรนารี</p></div>
+  <div class="spacer"></div>
+  <button class="btn line" id="btnAdmin" type="button">เข้าสู่ระบบผู้ดูแล</button>
+</div></header>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="cal-top">
+      <button class="nav" type="button" id="prevM">‹</button>
+      <div class="cal-title" id="calTitle">—</div>
+      <button class="nav" type="button" id="nextM">›</button>
+      <button class="btn sm ghost today-btn" type="button" id="btnToday">วันนี้</button>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><b class="ev am">เช้า</b> คลินิกภาคเช้า</span>
+      <span><b class="ev pm">บ่าย</b> คลินิกภาคบ่าย</span>
+      <span><span style="width:14px;height:14px;border-radius:4px;background:var(--grey);border:1px solid var(--line);display:inline-block"></span> เสาร์–อาทิตย์ (ไม่มีคลินิก)</span>
+      <span>🔒 ปิดรับจองแล้ว</span>
+    </div>
+  </div>
+
+  <div class="card" id="dayCard">
+    <div id="dayHead"></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="adminSched"></div>
+    <div id="chips"></div>
+    <div id="units"></div>
+  </div>
+
+  <div class="card" id="sumCard" style="display:none">
+    <h2>สรุปรายการจอง</h2><p class="sub" id="sumSub"></p><div id="sum"></div>
+  </div>
+
+  <div class="card" id="adminTools" style="display:none">
+    <h2>เครื่องมือผู้ดูแลระบบ</h2>
+    <p class="sub">ส่งออกรายงาน · จัดการรายวิชา/ยูนิต · สำรองข้อมูล</p>
+    <div class="r2">
+      <div class="f"><label>ส่งออกข้อมูลของวันที่</label><input type="date" id="expDate" class="inp"></div>
+      <div class="f"><label>ขอบเขต</label><select id="expScope" class="inp">
+        <option value="day">เฉพาะวันที่เลือก (เช้า+บ่าย)</option>
+        <option value="am">เฉพาะภาคเช้า</option>
+        <option value="pm">เฉพาะภาคบ่าย</option>
+        <option value="month">ทั้งเดือนของวันที่เลือก</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" type="button" id="bExcel">⤓ Export Excel (.xls)</button>
+      <button class="btn" type="button" id="bPdf">⤓ Export PDF · A4 · TH Sarabun 16pt</button>
+      <button class="btn ghost" type="button" id="bMgr">⚙ จัดการรายวิชา / ยูนิต</button>
+      <button class="btn ghost" type="button" id="bBak">⤓ สำรองข้อมูล (JSON)</button>
+      <button class="btn danger" type="button" id="bWipe">🗑 ล้างข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL จอง -->
+<div class="mask" id="mBook"><div class="modal">
+  <div class="mh"><h2 id="bkTitle"></h2><p class="sub" id="bkSub"></p></div>
+  <div class="mb">
+    <div id="bkLock"></div>
+    <div id="bkForm" style="margin-top:14px">
+      <div class="r2">
+        <div class="f"><label>ชั้นปี <span class="req">*</span></label>
+          <select id="fGrade" class="inp"><option value="">— เลือก —</option><option>5</option><option>6</option></select></div>
+        <div class="f"><label>ฐานฝึก <span class="req">*</span></label><select id="fBase" class="inp"></select></div>
+      </div>
+      <div class="f"><label>ชื่อ-นามสกุลนักศึกษา <span class="req">*</span></label>
+        <div class="rp"><input class="inp" value="นศ.ทพ." disabled><input id="fSName" class="inp" placeholder="เช่น สมชาย ใจดี"></div></div>
+      <hr style="border:none;border-top:1px dashed var(--line);margin:16px 0">
+      <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint">(เว้นว่างได้ → รอยืนยัน)</span></label>
+        <div class="rp"><select id="fPPfx" class="inp"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กหญิง</option><option>เด็กชาย</option></select>
+        <input id="fPName" class="inp" placeholder="ชื่อ-นามสกุลผู้ป่วย"></div></div>
+      <div class="r2">
+        <div class="f"><label>HN <span class="hint">(ตัวเลข, เว้นว่างได้)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
+        <div class="f"><label>สิทธิการรักษา <span class="req">*</span></label><select id="fRight" class="inp"></select></div>
+      </div>
+      <div class="f"><label>รายละเอียดงานที่ทำ <span class="req">*</span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
+      <div class="f"><label>หมายเหตุ</label><textarea id="fNote" class="inp" rows="2"></textarea></div>
+      <div id="bkHist"></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn danger" id="bkDel" type="button" style="display:none">ลบการจอง</button>
+    <div class="spacer"></div><button class="btn" type="button" data-close="mBook">ปิด</button>
+    <button class="btn primary" id="bkSave" type="button">บันทึกการจอง</button></div>
+</div></div>
+
+<!-- MODAL login -->
+<div class="mask" id="mLogin"><div class="modal" style="max-width:400px">
+  <div class="mh"><h2>เข้าสู่ระบบผู้ดูแล</h2><p class="sub">สำหรับเจ้าหน้าที่ / อาจารย์ผู้ดูแลคลินิก</p></div>
+  <div class="mb">
+    <div class="f"><label>ชื่อผู้ใช้</label><input id="lgU" class="inp" autocomplete="off"></div>
+    <div class="f"><label>รหัสผ่าน</label><input id="lgP" type="password" class="inp" autocomplete="off"></div>
+    <div id="lgErr" style="color:var(--red);font-size:13.5px;min-height:20px"></div>
+  </div>
+  <div class="mf"><button class="btn" type="button" data-close="mLogin">ยกเลิก</button>
+    <button class="btn primary" id="lgGo" type="button">เข้าสู่ระบบ</button></div>
+</div></div>
+
+<!-- MODAL clinic mgr -->
+<div class="mask" id="mClinic"><div class="modal">
+  <div class="mh"><h2>จัดการรายวิชา / หมายเลขยูนิต</h2><p class="sub">ชื่อวิชา และเลขยูนิต (คั่นด้วยจุลภาค)</p></div>
+  <div class="mb"><div id="mgrBody"></div><button class="btn sm" type="button" id="bAddC">+ เพิ่มรายวิชาใหม่</button></div>
+  <div class="mf"><button class="btn" type="button" data-close="mClinic">ปิด</button>
+    <button class="btn primary" type="button" id="bSaveC">บันทึก</button></div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+/* ================= CONFIG ================= */
+/* ---- ตั้งค่า Supabase ของคุณตรงนี้ (ดูวิธีได้ในขั้นตอนที่แนะนำ) ---- */
+var SUPABASE_URL = "https://xmrjcsgltxuwedmaubia.supabase.co";
+var SUPABASE_ANON_KEY = "sb_publishable_Ut9LLWLTxUmczydE0vIfIQ_CtDK-TGW";
+var sb = null;
+try{
+  if(window.supabase && SUPABASE_URL.indexOf("YOUR-PROJECT-ID")===-1){
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}catch(e){}
+var ADMIN_USER="OHCadmin";
+var ADMIN_PASS="OHCadmin@2569";   /* << เปลี่ยนรหัสผ่านจริงตรงนี้ */
+var CUTOFF_HOUR=15, SKIP_WEEKEND=true;
+
+var DEF_CLINICS=[
+ {id:"ortho",name:"Ortho",units:[211,212,213,214]},
+ {id:"os_sr",name:"OS (SR)",units:[221,222,223,224]},
+ {id:"endo",name:"Endo",units:[231,232,233,234]},
+ {id:"oper",name:"Oper",units:[241,242,243,244]},
+ {id:"pedo",name:"Pedo",units:[251,252,253,254]},
+ {id:"os_ext",name:"OS (Ext.)",units:[261,262,263,264]},
+ {id:"prosth_a",name:"Prosth (A)",units:[321,322,323,324]},
+ {id:"perio_a",name:"Perio (A)",units:[331,332,333,334]},
+ {id:"perio_b",name:"Perio (B)",units:[341,342,343,344]},
+ {id:"prosth_b",name:"Prosth (B)",units:[351,352,353,354]}];
+var BASES=["มหาราช","บุรีรัมย์","ชัยภูมิ","สุรินทร์","ภูเขียว","ปากช่อง"];
+var RIGHTS=["UC นครราชสีมา","UC ต่างจังหวัด","เบิกจ่ายตรง","อปท.","โครงการฯ","หลักประกันสุขภาพ มทส.","ปกส."];
+var TH_M=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+var TH_D=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+var WK=["อา","จ","อ","พ","พฤ","ศ","ส"];
+var SESS={am:"ภาคเช้า (09:00–12:00)",pm:"ภาคบ่าย (13:00–16:00)"};
+
+/* ========== STORAGE ปลอดภัย ========== */
+var MEM={};
+function sGet(k,d){try{var v=localStorage.getItem(k);if(v!=null)return JSON.parse(v);}catch(e){}
+  return (k in MEM)?MEM[k]:d;}
+function sSet(k,v){MEM[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function sDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){}}
+
+/* ---- ระบบเก็บข้อมูลกลาง (Supabase) : localStorage ใช้เป็นแคชสำรองเท่านั้น ---- */
+async function cloudLoad(){
+  if(!sb) return;
+  var res=await sb.from("app_state").select("key,value").in("key",["ohc_clinics","ohc_sched","ohc_book"]);
+  if(res.error) throw res.error;
+  (res.data||[]).forEach(function(row){
+    if(row.key==="ohc_clinics" && row.value) CLINICS=row.value;
+    if(row.key==="ohc_sched" && row.value) SCHED=row.value;
+    if(row.key==="ohc_book" && row.value) BOOK=row.value;
+  });
+  sSet("ohc_clinics",CLINICS); sSet("ohc_sched",SCHED); sSet("ohc_book",BOOK);
+}
+function cloudSave(k,v){
+  if(!sb) return;
+  sb.from("app_state").upsert({key:k,value:v,updated_at:new Date().toISOString()})
+    .then(function(res){ if(res.error) showErr(res.error); });
+}
+function cloudSubscribe(){
+  if(!sb) return;
+  sb.channel("app_state_sync")
+    .on("postgres_changes",{event:"*",schema:"public",table:"app_state"},function(){
+      cloudLoad().then(function(){ renderCal(); renderDay(); }).catch(showErr);
+    })
+    .subscribe();
+}
+
+var CLINICS=sGet("ohc_clinics",DEF_CLINICS);
+var SCHED=sGet("ohc_sched",{});          /* << ว่างเปล่า ไม่มีตารางตัวอย่าง */
+var BOOK=sGet("ohc_book",{});
+var isAdmin=sGet("ohc_admin",false)===true;
+function saveAll(){
+  sSet("ohc_clinics",CLINICS);sSet("ohc_sched",SCHED);sSet("ohc_book",BOOK);
+  cloudSave("ohc_clinics",CLINICS);cloudSave("ohc_sched",SCHED);cloudSave("ohc_book",BOOK);
+}
+
+/* ================= HELPERS ================= */
+function $(id){return document.getElementById(id);}
+function pad(n){return String(n).padStart(2,"0");}
+function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function parseK(k){var a=k.split("-");return new Date(+a[0],+a[1]-1,+a[2]);}
+function isWknd(d){return d.getDay()===0||d.getDay()===6;}
+function thDate(k){var d=parseK(k);return "วัน"+TH_D[d.getDay()]+"ที่ "+d.getDate()+" "+TH_M[d.getMonth()]+" "+(d.getFullYear()+543);}
+function thShort(k){var d=parseK(k);return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()+543).slice(-2);}
+function stamp(v){var d=new Date(v);return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+(d.getFullYear()+543)+" "+pad(d.getHours())+":"+pad(d.getMinutes())+" น.";}
+function dlText(d){return "วัน"+TH_D[d.getDay()]+"ที่ "+d.getDate()+" "+TH_M[d.getMonth()]+" "+(d.getFullYear()+543)+" เวลา "+pad(d.getHours())+":"+pad(d.getMinutes())+" น.";}
+function clinic(id){for(var i=0;i<CLINICS.length;i++)if(CLINICS[i].id===id)return CLINICS[i];return {id:id,name:id,units:[]};}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m];});}
+function deadlineOf(k){var d=parseK(k);d.setDate(d.getDate()-1);
+  if(SKIP_WEEKEND){while(isWknd(d))d.setDate(d.getDate()-1);}
+  d.setHours(CUTOFF_HOUR,0,0,0);return d;}
+function isLocked(k){return new Date()>deadlineOf(k);}
+function canEdit(k){return isAdmin||!isLocked(k);}
+function bkey(k,s,c,u){return k+"|"+s+"|"+c+"|"+u;}
+function statusOf(b){return !b?"free":((b.pName&&b.hn)?"book":"pend");}
+function sched(k){var x=SCHED[k]||{};return {am:x.am||[],pm:x.pm||[]};}
+function firstWeekday(d){var x=new Date(d.getTime());while(isWknd(x))x.setDate(x.getDate()+1);return x;}
+
+/* ================= STATE ================= */
+var now0=new Date();
+var VY=now0.getFullYear(),VM=now0.getMonth();
+var curKey=key(firstWeekday(now0)),curSess="am",curClinic=null;
+
+/* ================= CALENDAR ================= */
+function dayStat(k){var sc=sched(k),t=0,u=0;
+  ["am","pm"].forEach(function(s){sc[s].forEach(function(cid){
+    clinic(cid).units.forEach(function(un){t++;if(BOOK[bkey(k,s,cid,un)])u++;});});});
+  return {total:t,used:u};}
+
+function renderCal(){
+  $("calTitle").textContent=TH_M[VM]+" "+(VY+543);
+  var h="";
+  for(var w=0;w<7;w++) h+='<div class="wk'+((w===0||w===6)?" off":"")+'">'+WK[w]+"</div>";
+  var start=new Date(VY,VM,1).getDay();
+  var g=new Date(VY,VM,1); g.setDate(g.getDate()-start);
+  var todayK=key(new Date());
+  for(var i=0;i<42;i++){
+    var dt=new Date(g.getFullYear(),g.getMonth(),g.getDate()+i);
+    var k=key(dt),out=dt.getMonth()!==VM,off=isWknd(dt);
+    var cls="cell"+(off?" off":"")+(out?" out":"")+(k===todayK?" today":"")+((!off&&k===curKey)?" sel":"");
+    var inner='<div class="num">'+dt.getDate()+"</div>";
+    if(!off){
+      var sc=sched(k),st=dayStat(k);
+      if(sc.am.length) inner+='<div class="ev am">เช้า · '+esc(sc.am.map(function(x){return clinic(x).name;}).join(", "))+"</div>";
+      if(sc.pm.length) inner+='<div class="ev pm">บ่าย · '+esc(sc.pm.map(function(x){return clinic(x).name;}).join(", "))+"</div>";
+      if(st.total) inner+='<div class="cnt">จองแล้ว '+st.used+"/"+st.total+" ยูนิต</div>";
+      if(st.total&&isLocked(k)) inner+='<div class="lk">🔒</div>';
+    }
+    h+='<div class="'+cls+'"'+(off?"":' data-k="'+k+'"')+">"+inner+"</div>";
+  }
+  $("cal").innerHTML=h;
+  Array.prototype.forEach.call($("cal").querySelectorAll(".cell[data-k]"),function(c){
+    c.onclick=function(){selectDay(c.getAttribute("data-k"));};});
+}
+
+/* ================= DAY PANEL ================= */
+function selectDay(k){
+  var d=parseK(k); if(isWknd(d))return;
+  curKey=k;curClinic=null;
+  if(d.getMonth()!==VM||d.getFullYear()!==VY){VY=d.getFullYear();VM=d.getMonth();}
+  var sc=sched(k); curSess=(sc.am.length||!sc.pm.length)?"am":"pm";
+  renderCal();renderDay();
+  $("dayCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function renderDay(){
+  var k=curKey,sc=sched(k),dl=deadlineOf(k);
+  $("dayHead").innerHTML='<h2 style="margin:0">'+esc(thDate(k))+"</h2>"
+    +'<p class="sub" style="margin:0">'+(isLocked(k)
+      ?'<span style="color:var(--red)">🔒 ปิดรับการจองแล้ว — กำหนดปิด '+dlText(dl)+"</span>"+(isAdmin?' <b style="color:var(--w700)">— ผู้ดูแลยังแก้ไขได้</b>':"")
+      :"⏳ จอง / แก้ไขได้ถึง <b style=\"color:var(--w700)\">"+dlText(dl)+"</b>")+"</p>";
+
+  $("tabs").innerHTML=["am","pm"].map(function(s){
+    return '<div class="tab'+(curSess===s?" on":"")+'" data-s="'+s+'">'+SESS[s]+' <small style="opacity:.7">· '+sc[s].length+" วิชา</small></div>";}).join("");
+  Array.prototype.forEach.call($("tabs").children,function(t){
+    t.onclick=function(){curSess=t.getAttribute("data-s");curClinic=null;renderDay();};});
+
+  if(isAdmin){
+    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]
+      +'<div class="chk" id="schedChk" style="margin:10px 0">'
+      +(CLINICS.length?CLINICS.map(function(c){return '<label><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
+        +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+")</span></label>";}).join("")
+        :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
+      +'</div><button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
+      +'<button class="btn sm" type="button" id="bCopyPrev">คัดลอกจากวันทำการก่อนหน้า</button></div>';
+    if($("bSaveSch"))$("bSaveSch").onclick=saveSchedule;
+    if($("bCopyPrev"))$("bCopyPrev").onclick=copyPrev;
+  } else $("adminSched").innerHTML="";
+
+  var list=sc[curSess];
+  $("chips").innerHTML=list.length
+    ? '<div class="chips">'+list.map(function(id){var c=clinic(id);
+        return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+c.units.length+" ยูนิต</small></div>";}).join("")+"</div>"
+    : '<div class="empty">ยังไม่มีคลินิกใน'+SESS[curSess]+"ของวันนี้"+(isAdmin?'<br><span class="hint">เลือกรายวิชาจากกล่องด้านบนแล้วกดบันทึก</span>':"")+"</div>";
+  Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
+    el.onclick=function(){var id=el.getAttribute("data-c");curClinic=(curClinic===id?null:id);renderDay();};});
+
+  renderUnits();renderSum();
+}
+function renderUnits(){
+  var el=$("units");
+  if(!curClinic){el.innerHTML="";return;}
+  var c=clinic(curClinic);
+  var map={free:["u-free","ว่าง"],pend:["u-pend","รอยืนยัน"],book:["u-book","จองแล้ว"]};
+  el.innerHTML='<div style="margin-top:16px"><b style="color:var(--w800)">'+esc(c.name)+"</b> — คลิกเลือกยูนิตเพื่อจอง</div>"
+   +'<div class="units">'+c.units.map(function(u){
+      var b=BOOK[bkey(curKey,curSess,curClinic,u)],st=statusOf(b);
+      return '<div class="unit '+map[st][0]+'" data-u="'+u+'"><div class="no">'+u+"</div>"
+        +'<div class="st"><span class="dot"></span>'+map[st][1]+"</div>"
+        +'<div class="who">'+(b?"นศ.ทพ."+esc(b.sName):"คลิกเพื่อจอง")+"</div></div>";}).join("")+"</div>"
+   +'<div class="legend">'
+   +'<span><span class="dot" style="background:var(--green);outline:2px solid var(--green);outline-offset:2px"></span> ว่าง</span>'
+   +'<span><span class="dot" style="background:var(--yellow);outline:2px solid var(--yellow);outline-offset:2px"></span> รอยืนยัน</span>'
+   +'<span><span class="dot" style="background:var(--green);outline:2px solid var(--red);outline-offset:2px"></span> จองแล้ว</span></div>';
+  Array.prototype.forEach.call(el.querySelectorAll(".unit"),function(x){
+    x.onclick=function(){openBook(curClinic,x.getAttribute("data-u"));};});
+}
+function rowsOf(k,ss){var out=[];
+  ss.forEach(function(s){sched(k)[s].forEach(function(cid){clinic(cid).units.forEach(function(u){
+    var b=BOOK[bkey(k,s,cid,u)];if(b)out.push({k:k,s:s,cid:cid,u:u,b:b});});});});
+  return out;}
+function renderSum(){
+  var rows=rowsOf(curKey,[curSess]);
+  $("sumCard").style.display="";
+  $("sumSub").textContent=thDate(curKey)+" · "+SESS[curSess]+" · ทั้งหมด "+rows.length+" รายการ";
+  if(!rows.length){$("sum").innerHTML='<div class="empty">ยังไม่มีการจองในช่วงเวลานี้</div>';return;}
+  var byC={};rows.forEach(function(r){(byC[r.cid]=byC[r.cid]||[]).push(r);});
+  $("sum").innerHTML=Object.keys(byC).map(function(cid){
+    return '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--w800)">'+esc(clinic(cid).name)
+     +' <span style="color:var(--muted);font-weight:400;font-size:13px">('+byC[cid].length+" ยูนิต)</span></h3>"
+     +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
+     +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
+       return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
+        +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+"</td><td>"+(b.hn?esc(b.hn):"—")+"</td><td>"+esc(b.right)+"</td>"
+        +"<td>"+esc(b.work)+"</td><td>"+(esc(b.note)||"-")+"</td>"
+        +'<td><span class="badge '+(ok?"b-ok":"b-wait")+'">'+(ok?"จองแล้ว":"รอยืนยัน")+"</span></td>"
+        +'<td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">'+stamp(b.updatedAt)+"<br>จองเมื่อ "+stamp(b.createdAt)+"</td></tr>";}).join("")
+     +"</tbody></table></div>";}).join("");
+}
+
+/* ================= BOOKING ================= */
+var editK=null;
+function openBook(cid,u){
+  editK={k:curKey,s:curSess,c:cid,u:u};
+  var b=BOOK[bkey(curKey,curSess,cid,u)];
+  $("bkTitle").textContent="ยูนิต "+u+" · "+clinic(cid).name;
+  $("bkSub").textContent=thDate(curKey)+" · "+SESS[curSess];
+  $("fBase").innerHTML='<option value="">— เลือก —</option>'+BASES.map(function(x){return "<option>"+x+"</option>";}).join("");
+  $("fRight").innerHTML='<option value="">— เลือก —</option>'+RIGHTS.map(function(x){return "<option>"+x+"</option>";}).join("");
+  function V(id,v){$(id).value=v==null?"":v;}
+  V("fGrade",b&&b.grade);V("fBase",b&&b.base);V("fSName",b&&b.sName);V("fPPfx",(b&&b.pPfx)||"นาย");
+  V("fPName",b&&b.pName);V("fHN",b&&b.hn);V("fRight",b&&b.right);V("fWork",b&&b.work);V("fNote",b&&b.note);
+  var ed=canEdit(curKey);
+  Array.prototype.forEach.call(document.querySelectorAll("#bkForm .inp"),function(i){i.disabled=!ed;});
+  $("bkSave").style.display=ed?"":"none";
+  $("bkDel").style.display=(b&&ed)?"":"none";
+  $("bkLock").innerHTML=ed
+    ?'<div class="note">⏳ จอง/แก้ไขได้ถึง <b>'+dlText(deadlineOf(curKey))+'</b><br><span style="font-size:12.5px">(15:00 ของวันทำการก่อนหน้า — คลินิกวันจันทร์ปิดรับตั้งแต่ศุกร์ 15:00)</span></div>'
+    :'<div class="note lock">🔒 ปิดรับการจอง/แก้ไขแล้ว — เลยกำหนด '+dlText(deadlineOf(curKey))+"</div>";
+  $("bkHist").innerHTML=(b&&b.log&&b.log.length)
+    ?'<div class="hist"><b>ประวัติการบันทึก</b><br>'+b.log.slice().reverse().map(function(l){return "• "+stamp(l.at)+" — "+esc(l.act);}).join("<br>")+"</div>":"";
+  openM("mBook");
+}
+function saveBooking(){
+  if(!editK)return;
+  var k=editK.k,s=editK.s,c=editK.c,u=editK.u;
+  if(!canEdit(k)){alert("ปิดรับการจองแล้ว ไม่สามารถบันทึกได้");return;}
+  function g(id){return $(id).value.trim();}
+  var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:g("fPPfx"),pName:g("fPName"),
+    hn:g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),note:g("fNote")};
+  if(!d.grade||!d.base||!d.sName||!d.right||!d.work){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
+  var bk=bkey(k,s,c,u),old=BOOK[bk],nowI=new Date().toISOString();
+  d.createdAt=(old&&old.createdAt)||nowI; d.updatedAt=nowI;
+  d.log=((old&&old.log)||[]).concat([{at:nowI,act:(old?"แก้ไขข้อมูล":"จองยูนิต")+(isAdmin?" (โดยผู้ดูแล)":" โดย นศ.ทพ."+d.sName)}]);
+  BOOK[bk]=d; saveAll(); closeM("mBook"); renderCal(); renderDay();
+  alert((statusOf(d)==="book"?"✅ จองสำเร็จ — สถานะ: จองแล้ว":"⚠️ บันทึกแล้ว — สถานะ: รอยืนยัน (ยังไม่ระบุชื่อผู้ป่วย/HN)")
+    +"\nยูนิต "+u+" · "+clinic(c).name+"\nบันทึกเมื่อ "+stamp(nowI));
+}
+function deleteBooking(){
+  if(!editK)return;
+  if(!canEdit(editK.k)){alert("ปิดรับการแก้ไขแล้ว");return;}
+  if(!confirm("ยืนยันลบการจองยูนิต "+editK.u+" ("+clinic(editK.c).name+") ?"))return;
+  delete BOOK[bkey(editK.k,editK.s,editK.c,editK.u)];saveAll();closeM("mBook");renderCal();renderDay();
+}
+
+/* ================= ADMIN ================= */
+function refresh(){try{syncAdmin();renderCal();renderDay();}catch(e){showErr(e);} }
+function saveSchedule(){
+  var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
+  var cur=sched(curKey); cur[curSess]=ids; SCHED[curKey]=cur;
+  saveAll();renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
+}
+function copyPrev(){
+  var d=parseK(curKey);do{d.setDate(d.getDate()-1);}while(isWknd(d));
+  var p=sched(key(d));
+  if(!p[curSess].length){alert("วันทำการก่อนหน้าไม่มีตารางในช่วงเวลานี้");return;}
+  var cur=sched(curKey);cur[curSess]=p[curSess].slice();SCHED[curKey]=cur;
+  saveAll();renderCal();renderDay();
+}
+function syncAdmin(){
+  $("btnAdmin").textContent=isAdmin?"ออกจากระบบผู้ดูแล":"เข้าสู่ระบบผู้ดูแล";
+  $("adminTools").style.display=isAdmin?"":"none";
+  if(!$("expDate").value)$("expDate").value=curKey;
+}
+function doLogin(){
+  var u=$("lgU").value.trim(),p=$("lgP").value;
+  if(u===ADMIN_USER&&p===ADMIN_PASS){
+    isAdmin=true;sSet("ohc_admin",true);closeM("mLogin");refresh();
+  } else $("lgErr").textContent="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+}
+function doLogout(){
+  if(!confirm("ต้องการออกจากระบบผู้ดูแลใช่หรือไม่?"))return;
+  isAdmin=false; sSet("ohc_admin",false); sDel("ohc_admin");
+  curClinic=null; refresh();
+}
+/* clinic manager */
+function renderMgr(){
+  $("mgrBody").innerHTML=CLINICS.length?CLINICS.map(function(c,i){
+    return '<div class="r2" style="grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center">'
+      +'<input class="inp cm-n" value="'+esc(c.name)+'" placeholder="ชื่อวิชา">'
+      +'<input class="inp cm-u" value="'+c.units.join(", ")+'" placeholder="211, 212, 213">'
+      +'<button class="btn sm danger" type="button" data-i="'+i+'">ลบ</button></div>';}).join("")
+    :'<div class="empty">ยังไม่มีรายวิชา — กดปุ่มด้านล่างเพื่อเพิ่ม</div>';
+  Array.prototype.forEach.call($("mgrBody").querySelectorAll("button"),function(b){
+    b.onclick=function(){readMgr();CLINICS.splice(+b.getAttribute("data-i"),1);renderMgr();};});
+}
+function readMgr(){
+  var ns=$("mgrBody").querySelectorAll(".cm-n"),us=$("mgrBody").querySelectorAll(".cm-u");
+  if(!ns.length)return;
+  var out=[];
+  for(var i=0;i<ns.length;i++){
+    var nm=ns[i].value.trim();if(!nm)continue;
+    out.push({id:(CLINICS[i]&&CLINICS[i].id)||"c"+Date.now()+i,name:nm,
+      units:us[i].value.split(",").map(function(x){return x.trim();}).filter(Boolean)});}
+  CLINICS=out;
+}
+
+/* ================= EXPORT ================= */
+function collect(){
+  var dv=$("expDate").value,sc=$("expScope").value;
+  if(!dv){alert("กรุณาเลือกวันที่");return null;}
+  var keys=[dv],ss=["am","pm"];
+  if(sc==="am")ss=["am"]; if(sc==="pm")ss=["pm"];
+  if(sc==="month"){var d=parseK(dv),last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();keys=[];
+    for(var i=1;i<=last;i++)keys.push(d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(i));}
+  var rows=[];keys.forEach(function(k){rows=rows.concat(rowsOf(k,ss));});
+  var t=sc==="month"?("ประจำเดือน"+TH_M[parseK(dv).getMonth()]+" พ.ศ. "+(parseK(dv).getFullYear()+543))
+    :(thDate(dv)+(sc==="day"?"":" · "+SESS[sc]));
+  return {rows:rows,title:t};
+}
+var HEAD=["ลำดับ","วันที่","ช่วงเวลา","คลินิก","ยูนิต","ชั้นปี","ชื่อ-นามสกุลนักศึกษา","ฐานฝึก","ชื่อ-นามสกุลผู้ป่วย","HN","สิทธิการรักษา","รายละเอียดงานที่ทำ","หมายเหตุ","สถานะ","บันทึกล่าสุด","ลงชื่อ"];
+function toRow(r,i){var b=r.b;return [i+1,thShort(r.k),r.s==="am"?"เช้า":"บ่าย",clinic(r.cid).name,r.u,b.grade,
+ "นศ.ทพ."+b.sName,b.base,b.pName?(b.pPfx+" "+b.pName):"-",b.hn||"-",b.right,b.work,b.note||"-",
+ statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน",stamp(b.updatedAt),""];}
+function dlFile(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href);},1000);}
+function exportExcel(){
+  var c=collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
+  var html='<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'
+   +'<table border="1"><tr><td colspan="16"><b>สำนักวิชาทันตแพทยศาสตร์ มทส. — รายงานการจองยูนิตปฏิบัติงานคลินิก '+esc(c.title)+"</b></td></tr><tr>"
+   +HEAD.map(function(h){return "<th>"+h+"</th>";}).join("")+"</tr>"
+   +c.rows.map(function(r,i){return "<tr>"+toRow(r,i).map(function(v){return "<td>"+esc(v)+"</td>";}).join("")+"</tr>";}).join("")
+   +"</table></body></html>";
+  dlFile(new Blob(["\ufeff"+html],{type:"application/vnd.ms-excel;charset=utf-8"}),"OHC-booking-"+$("expDate").value+".xls");
+}
+function exportPDF(){
+  var c=collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
+  var g={};c.rows.forEach(function(r){var gk=r.k+"|"+r.s+"|"+r.cid;(g[gk]=g[gk]||[]).push(r);});
+  var blocks=Object.keys(g).sort().map(function(gk){
+    var p=gk.split("|"),rs=g[gk].sort(function(a,b){return a.u-b.u;});
+    return '<div class="blk"><div class="bh">'+esc(thDate(p[0]))+" · "+(p[1]==="am"?"ภาคเช้า":"ภาคบ่าย")+" · คลินิก "+esc(clinic(p[2]).name)+"</div>"
+     +'<table><thead><tr><th style="width:7%">ยูนิต</th><th style="width:5%">ปี</th>'
+     +'<th style="width:23%">ชื่อ-นามสกุลนักศึกษา<br><span class="s">/ ฐานฝึก</span></th>'
+     +'<th style="width:20%">ชื่อ-นามสกุลผู้ป่วย<br><span class="s">/ HN</span></th>'
+     +'<th style="width:13%">สิทธิการรักษา</th><th style="width:18%">งานที่ทำ<br><span class="s">/ หมายเหตุ</span></th>'
+     +'<th style="width:14%">ลงชื่อ</th></tr></thead><tbody>'
+     +rs.map(function(r){var b=r.b;return '<tr><td class="c"><b>'+r.u+'</b></td><td class="c">'+esc(b.grade)+"</td>"
+       +"<td>นศ.ทพ."+esc(b.sName)+'<br><span class="s">ฐานฝึก: '+esc(b.base)+"</span></td>"
+       +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+'<br><span class="s">HN: '+esc(b.hn||"—")+" · "+(statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน")+"</span></td>"
+       +"<td>"+esc(b.right)+"</td><td>"+esc(b.work)+'<br><span class="s">'+(esc(b.note)||"-")+"<br>บันทึก: "+stamp(b.updatedAt)+"</span></td>"
+       +'<td class="sign"></td></tr>';}).join("")+"</tbody></table></div>";}).join("");
+  var w=window.open("","_blank");
+  if(!w){alert("เบราว์เซอร์บล็อกป๊อปอัป — กรุณาอนุญาต popup แล้วลองใหม่");return;}
+  w.document.write('<html><head><meta charset="UTF-8"><title>รายงานการจองยูนิตคลินิก</title>'
+   +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><style>'
+   +"@page{size:A4 portrait;margin:15mm 12mm}"
+   +"body{font-family:'TH Sarabun New','TH SarabunPSK','Sarabun',serif;font-size:16pt;color:#000;margin:0}"
+   +"h1{font-size:18pt;margin:0;text-align:center}h2{font-size:16pt;margin:2px 0 12px;text-align:center;font-weight:400}"
+   +".blk{margin-bottom:14px;page-break-inside:avoid}"
+   +".bh{font-size:16pt;font-weight:700;background:#f2e3ea;border:1px solid #000;border-bottom:none;padding:3px 6px}"
+   +"table{border-collapse:collapse;width:100%;font-size:16pt;table-layout:fixed}"
+   +"th,td{border:1px solid #000;padding:2px 5px;vertical-align:top;word-wrap:break-word}"
+   +"th{background:#f8f0f4;text-align:center}td.c{text-align:center}"
+   +".s{font-size:14pt;color:#333}.sign{height:44px}"
+   +".ft{margin-top:10px;font-size:14pt;display:flex;justify-content:space-between}</style></head><body>"
+   +"<h1>สำนักวิชาทันตแพทยศาสตร์ มหาวิทยาลัยเทคโนโลยีสุรนารี</h1>"
+   +"<h2>รายงานการจองยูนิตปฏิบัติงานคลินิก — "+esc(c.title)+"</h2>"+blocks
+   +'<div class="ft"><span>รวมทั้งสิ้น '+c.rows.length+" รายการ</span><span>พิมพ์เมื่อ "+stamp(new Date())+"</span></div>"
+   +"<scr"+"ipt>window.onload=function(){setTimeout(function(){window.print();},700);}<\/scr"+"ipt></body></html>");
+  w.document.close();
+}
+
+/* ================= MODAL / EVENTS ================= */
+function openM(id){$(id).classList.add("on");}
+function closeM(id){$(id).classList.remove("on");}
+function showErr(e){var eb=$("err");eb.style.display="block";eb.textContent="เกิดข้อผิดพลาด: "+(e&&e.message?e.message:e);}
+Array.prototype.forEach.call(document.querySelectorAll(".mask"),function(m){
+  m.onclick=function(e){if(e.target===m)m.classList.remove("on");};});
+Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(b){
+  b.onclick=function(){closeM(b.getAttribute("data-close"));};});
+
+/* ================= INIT ================= */
+try{
+  $("prevM").onclick=function(){VM--;if(VM<0){VM=11;VY--;}renderCal();};
+  $("nextM").onclick=function(){VM++;if(VM>11){VM=0;VY++;}renderCal();};
+  $("btnToday").onclick=function(){var n=firstWeekday(new Date());VY=n.getFullYear();VM=n.getMonth();selectDay(key(n));};
+  $("btnAdmin").onclick=function(){
+    if(isAdmin){ doLogout(); }
+    else{$("lgU").value="";$("lgP").value="";$("lgErr").textContent="";openM("mLogin");setTimeout(function(){$("lgU").focus();},80);}};
+  $("lgGo").onclick=doLogin;
+  $("lgP").onkeydown=function(e){if(e.key==="Enter")doLogin();};
+  $("lgU").onkeydown=function(e){if(e.key==="Enter")$("lgP").focus();};
+  $("bkSave").onclick=saveBooking;
+  $("bkDel").onclick=deleteBooking;
+  $("bExcel").onclick=exportExcel;
+  $("bPdf").onclick=exportPDF;
+  $("bMgr").onclick=function(){renderMgr();openM("mClinic");};
+  $("bAddC").onclick=function(){readMgr();CLINICS.push({id:"c"+Date.now(),name:"",units:[]});renderMgr();};
+  $("bSaveC").onclick=function(){readMgr();saveAll();closeM("mClinic");renderCal();renderDay();alert("บันทึกรายวิชาเรียบร้อย");};
+  $("bBak").onclick=function(){dlFile(new Blob([JSON.stringify({CLINICS:CLINICS,SCHED:SCHED,BOOK:BOOK},null,2)],{type:"application/json"}),"OHC-backup-"+key(new Date())+".json");};
+  $("bWipe").onclick=function(){if(!confirm("ล้างตารางคลินิก + การจองทั้งหมด?"))return;
+    SCHED={};BOOK={};saveAll();renderCal();renderDay();alert("ล้างข้อมูลแล้ว");};
+
+  (async function boot(){
+    try{
+      if(sb){ await cloudLoad(); cloudSubscribe(); }
+    }catch(e){ showErr(e); }
+    refresh();
+  })();
+}catch(e){ showErr(e); }
+})();
+</script>
+</body>
+</html>
