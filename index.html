@@ -189,11 +189,11 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
       <div class="f"><label>ชื่อ-นามสกุลนักศึกษา <span class="req">*</span></label>
         <div class="rp"><input class="inp" value="นศ.ทพ." disabled><input id="fSName" class="inp" placeholder="เช่น สมชาย ใจดี"></div></div>
       <hr style="border:none;border-top:1px dashed var(--line);margin:16px 0">
-      <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint">(เว้นว่างได้ → รอยืนยัน)</span></label>
+      <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint">(หากเว้นว่าง → รอยืนยัน)</span></label>
         <div class="rp"><select id="fPPfx" class="inp"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กหญิง</option><option>เด็กชาย</option></select>
         <input id="fPName" class="inp" placeholder="ชื่อ-นามสกุลผู้ป่วย"></div></div>
       <div class="r2">
-        <div class="f"><label>HN <span class="hint">(ตัวเลข, เว้นว่างได้)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
+        <div class="f"><label>HN <span class="hint">(ตัวเลข, หากเว้นว่าง → รอยืนยัน)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
         <div class="f"><label>สิทธิการรักษา <span class="req">*</span></label><select id="fRight" class="inp"></select></div>
       </div>
       <div class="f"><label>รายละเอียดงานที่ทำ <span class="req">*</span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
@@ -262,47 +262,105 @@ var TH_D=["อาทิตย์","จันทร์","อังคาร","พ
 var WK=["อา","จ","อ","พ","พฤ","ศ","ส"];
 var SESS={am:"ภาคเช้า (09:00–12:00)",pm:"ภาคบ่าย (13:00–16:00)"};
 
-/* ========== STORAGE ปลอดภัย ========== */
+/* ========== STORAGE ปลอดภัย (แคชสำรองในเครื่อง) ========== */
 var MEM={};
 function sGet(k,d){try{var v=localStorage.getItem(k);if(v!=null)return JSON.parse(v);}catch(e){}
   return (k in MEM)?MEM[k]:d;}
 function sSet(k,v){MEM[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function sDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){}}
 
-/* ---- ระบบเก็บข้อมูลกลาง (Supabase) : localStorage ใช้เป็นแคชสำรองเท่านั้น ---- */
-async function cloudLoad(){
-  if(!sb) return;
-  var res=await sb.from("app_state").select("key,value").in("key",["ohc_clinics","ohc_sched","ohc_book"]);
-  if(res.error) throw res.error;
-  (res.data||[]).forEach(function(row){
-    if(row.key==="ohc_clinics" && row.value) CLINICS=row.value;
-    if(row.key==="ohc_sched" && row.value) SCHED=row.value;
-    if(row.key==="ohc_book" && row.value) BOOK=row.value;
-  });
-  sSet("ohc_clinics",CLINICS); sSet("ohc_sched",SCHED); sSet("ohc_book",BOOK);
+/* ==========================================================================
+   ระบบเก็บข้อมูลกลาง (Supabase) — โครงสร้างแบบ "1 แถว ต่อ 1 รายการ"
+   - clinics           : รายวิชา/คลินิก (ตารางเล็ก โหลดทั้งหมดได้)
+   - schedule_entries  : ตารางคลินิกรายวัน (1 แถว = 1 คลินิกที่เปิดในวัน+ช่วงนั้น)
+   - bookings          : การจองยูนิต (1 แถว = 1 ยูนิตที่ถูกจอง)
+   เพื่อให้รองรับข้อมูลสะสมหลายปีโดยไม่ช้าลง เราจะ "โหลดเฉพาะช่วงที่มองเห็น"
+   (เดือนที่กำลังแสดงในปฏิทิน) แทนการโหลดข้อมูลทั้งหมดทุกครั้ง
+   ========================================================================== */
+function bxRow(r){ /* แปลงแถวจากฐานข้อมูล -> object ที่หน้าเว็บใช้ */
+  return {grade:r.grade,base:r.base,sName:r.s_name,pPfx:r.p_pfx,pName:r.p_name,hn:r.hn,
+    right:r.patient_right,work:r.work,note:r.note,createdAt:r.created_at,updatedAt:r.updated_at,log:r.log||[]};
 }
-function cloudSave(k,v){
+function bxOut(d){ /* แปลง object ของหน้าเว็บ -> แถวสำหรับบันทึกลงฐานข้อมูล */
+  return {grade:d.grade,base:d.base,s_name:d.sName,p_pfx:d.pPfx,p_name:d.pName,hn:d.hn,
+    patient_right:d.right,work:d.work,note:d.note,created_at:d.createdAt,updated_at:d.updatedAt,log:d.log||[]};
+}
+
+async function cloudLoadClinics(){
   if(!sb) return;
-  sb.from("app_state").upsert({key:k,value:v,updated_at:new Date().toISOString()})
-    .then(function(res){ if(res.error) showErr(res.error); });
+  var res=await sb.from("clinics").select("id,name,units").order("sort_order",{ascending:true});
+  if(res.error) throw res.error;
+  if(res.data && res.data.length) CLINICS=res.data.map(function(r){return {id:r.id,name:r.name,units:r.units||[]};});
+  sSet("ohc_clinics",CLINICS);
+}
+async function cloudSaveClinics(){
+  if(!sb) return;
+  var delRes=await sb.from("clinics").delete().neq("id","");
+  if(delRes.error){showErr(delRes.error);return;}
+  if(!CLINICS.length) return;
+  var rows=CLINICS.map(function(c,i){return {id:c.id,name:c.name,units:c.units,sort_order:i};});
+  var insRes=await sb.from("clinics").insert(rows);
+  if(insRes.error) showErr(insRes.error);
+}
+
+/* โหลดตาราง+การจองเฉพาะ "ช่วงวันที่" ที่ต้องใช้ (คืนค่าเป็น object ใหม่ ไม่ยุ่งกับตัวแปร global) */
+async function fetchRange(startK,endK){
+  if(!sb) return {sched:{},book:{}};
+  var schedRes=await sb.from("schedule_entries").select("date,session,clinic_id").gte("date",startK).lte("date",endK);
+  if(schedRes.error) throw schedRes.error;
+  var bookRes=await sb.from("bookings").select("*").gte("date",startK).lte("date",endK);
+  if(bookRes.error) throw bookRes.error;
+  var sc={};
+  (schedRes.data||[]).forEach(function(r){
+    sc[r.date]=sc[r.date]||{am:[],pm:[]};
+    sc[r.date][r.session].push(r.clinic_id);
+  });
+  var bk={};
+  (bookRes.data||[]).forEach(function(r){
+    bk[bkey(r.date,r.session,r.clinic_id,r.unit)]=bxRow(r);
+  });
+  return {sched:sc,book:bk};
+}
+/* ช่วงวันที่ของ "กริดปฏิทิน" ที่กำลังแสดง (42 ช่อง รวมวันเดือนก่อน/หลังที่โผล่มาด้วย) */
+function gridRange(y,m){
+  var start=new Date(y,m,1).getDay();
+  var g=new Date(y,m,1); g.setDate(g.getDate()-start);
+  var e=new Date(g.getFullYear(),g.getMonth(),g.getDate()+41);
+  return {startK:key(g),endK:key(e)};
+}
+var loadedRangeK=null;
+async function loadCalendarWindow(){
+  if(!sb) return;
+  var r=gridRange(VY,VM);
+  var data=await fetchRange(r.startK,r.endK);
+  SCHED=data.sched; BOOK=data.book; loadedRangeK=r;
+}
+/* กันเคสขอบเดือน เช่น copyPrev() ที่อาจอ้างถึงวันนอกช่วงที่โหลดไว้ */
+async function ensureDateLoaded(k){
+  if(!sb) return;
+  if(loadedRangeK && k>=loadedRangeK.startK && k<=loadedRangeK.endK) return;
+  var data=await fetchRange(k,k);
+  SCHED[k]=data.sched[k]||{am:[],pm:[]};
+  Object.keys(data.book).forEach(function(bk){BOOK[bk]=data.book[bk];});
 }
 function cloudSubscribe(){
   if(!sb) return;
-  sb.channel("app_state_sync")
-    .on("postgres_changes",{event:"*",schema:"public",table:"app_state"},function(){
-      cloudLoad().then(function(){ renderCal(); renderDay(); }).catch(showErr);
+  sb.channel("ohc_sync")
+    .on("postgres_changes",{event:"*",schema:"public",table:"bookings"},function(){ resyncAndRender(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"schedule_entries"},function(){ resyncAndRender(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"clinics"},function(){
+      cloudLoadClinics().then(function(){renderCal();renderDay();}).catch(showErr);
     })
     .subscribe();
 }
+function resyncAndRender(){
+  loadCalendarWindow().then(function(){ renderCal(); renderDay(); }).catch(showErr);
+}
 
 var CLINICS=sGet("ohc_clinics",DEF_CLINICS);
-var SCHED=sGet("ohc_sched",{});          /* << ว่างเปล่า ไม่มีตารางตัวอย่าง */
-var BOOK=sGet("ohc_book",{});
+var SCHED={};   /* แคชของ "ช่วงเดือนที่กำลังแสดง" เท่านั้น ไม่ใช่ข้อมูลทั้งหมด */
+var BOOK={};
 var isAdmin=sGet("ohc_admin",false)===true;
-function saveAll(){
-  sSet("ohc_clinics",CLINICS);sSet("ohc_sched",SCHED);sSet("ohc_book",BOOK);
-  cloudSave("ohc_clinics",CLINICS);cloudSave("ohc_sched",SCHED);cloudSave("ohc_book",BOOK);
-}
 
 /* ================= HELPERS ================= */
 function $(id){return document.getElementById(id);}
@@ -364,10 +422,12 @@ function renderCal(){
 }
 
 /* ================= DAY PANEL ================= */
-function selectDay(k){
+async function selectDay(k){
   var d=parseK(k); if(isWknd(d))return;
   curKey=k;curClinic=null;
-  if(d.getMonth()!==VM||d.getFullYear()!==VY){VY=d.getFullYear();VM=d.getMonth();}
+  var monthChanged=(d.getMonth()!==VM||d.getFullYear()!==VY);
+  if(monthChanged){VY=d.getFullYear();VM=d.getMonth();}
+  if(monthChanged && sb){ try{ await loadCalendarWindow(); }catch(e){ showErr(e); } }
   var sc=sched(k); curSess=(sc.am.length||!sc.pm.length)?"am":"pm";
   renderCal();renderDay();
   $("dayCard").scrollIntoView({behavior:"smooth",block:"start"});
@@ -470,7 +530,7 @@ function openBook(cid,u){
     ?'<div class="hist"><b>ประวัติการบันทึก</b><br>'+b.log.slice().reverse().map(function(l){return "• "+stamp(l.at)+" — "+esc(l.act);}).join("<br>")+"</div>":"";
   openM("mBook");
 }
-function saveBooking(){
+async function saveBooking(){
   if(!editK)return;
   var k=editK.k,s=editK.s,c=editK.c,u=editK.u;
   if(!canEdit(k)){alert("ปิดรับการจองแล้ว ไม่สามารถบันทึกได้");return;}
@@ -481,30 +541,57 @@ function saveBooking(){
   var bk=bkey(k,s,c,u),old=BOOK[bk],nowI=new Date().toISOString();
   d.createdAt=(old&&old.createdAt)||nowI; d.updatedAt=nowI;
   d.log=((old&&old.log)||[]).concat([{at:nowI,act:(old?"แก้ไขข้อมูล":"จองยูนิต")+(isAdmin?" (โดยผู้ดูแล)":" โดย นศ.ทพ."+d.sName)}]);
-  BOOK[bk]=d; saveAll(); closeM("mBook"); renderCal(); renderDay();
+  if(sb){
+    var row=bxOut(d); row.date=k; row.session=s; row.clinic_id=c; row.unit=String(u);
+    var res=await sb.from("bookings").upsert(row);
+    if(res.error){showErr(res.error);return;}
+  }
+  BOOK[bk]=d; closeM("mBook"); renderCal(); renderDay();
   alert((statusOf(d)==="book"?"✅ จองสำเร็จ — สถานะ: จองแล้ว":"⚠️ บันทึกแล้ว — สถานะ: รอยืนยัน (ยังไม่ระบุชื่อผู้ป่วย/HN)")
     +"\nยูนิต "+u+" · "+clinic(c).name+"\nบันทึกเมื่อ "+stamp(nowI));
 }
-function deleteBooking(){
+async function deleteBooking(){
   if(!editK)return;
   if(!canEdit(editK.k)){alert("ปิดรับการแก้ไขแล้ว");return;}
   if(!confirm("ยืนยันลบการจองยูนิต "+editK.u+" ("+clinic(editK.c).name+") ?"))return;
-  delete BOOK[bkey(editK.k,editK.s,editK.c,editK.u)];saveAll();closeM("mBook");renderCal();renderDay();
+  if(sb){
+    var res=await sb.from("bookings").delete()
+      .eq("date",editK.k).eq("session",editK.s).eq("clinic_id",editK.c).eq("unit",String(editK.u));
+    if(res.error){showErr(res.error);return;}
+  }
+  delete BOOK[bkey(editK.k,editK.s,editK.c,editK.u)];closeM("mBook");renderCal();renderDay();
 }
 
 /* ================= ADMIN ================= */
 function refresh(){try{syncAdmin();renderCal();renderDay();}catch(e){showErr(e);} }
-function saveSchedule(){
-  var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
-  var cur=sched(curKey); cur[curSess]=ids; SCHED[curKey]=cur;
-  saveAll();renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
+async function writeScheduleDay(k,s,ids){
+  if(sb){
+    var delRes=await sb.from("schedule_entries").delete().eq("date",k).eq("session",s);
+    if(delRes.error){showErr(delRes.error);return false;}
+    if(ids.length){
+      var rows=ids.map(function(cid){return {date:k,session:s,clinic_id:cid};});
+      var insRes=await sb.from("schedule_entries").insert(rows);
+      if(insRes.error){showErr(insRes.error);return false;}
+    }
+  }
+  var cur=sched(k); cur[s]=ids; SCHED[k]=cur;
+  return true;
 }
-function copyPrev(){
+async function saveSchedule(){
+  var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
+  var ok=await writeScheduleDay(curKey,curSess,ids);
+  if(!ok)return;
+  renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
+}
+async function copyPrev(){
   var d=parseK(curKey);do{d.setDate(d.getDate()-1);}while(isWknd(d));
-  var p=sched(key(d));
+  var pk=key(d);
+  await ensureDateLoaded(pk);
+  var p=sched(pk);
   if(!p[curSess].length){alert("วันทำการก่อนหน้าไม่มีตารางในช่วงเวลานี้");return;}
-  var cur=sched(curKey);cur[curSess]=p[curSess].slice();SCHED[curKey]=cur;
-  saveAll();renderCal();renderDay();
+  var ok=await writeScheduleDay(curKey,curSess,p[curSess].slice());
+  if(!ok)return;
+  renderCal();renderDay();
 }
 function syncAdmin(){
   $("btnAdmin").textContent=isAdmin?"ออกจากระบบผู้ดูแล":"เข้าสู่ระบบผู้ดูแล";
@@ -545,14 +632,31 @@ function readMgr(){
 }
 
 /* ================= EXPORT ================= */
-function collect(){
+async function collect(){
   var dv=$("expDate").value,sc=$("expScope").value;
   if(!dv){alert("กรุณาเลือกวันที่");return null;}
   var keys=[dv],ss=["am","pm"];
   if(sc==="am")ss=["am"]; if(sc==="pm")ss=["pm"];
   if(sc==="month"){var d=parseK(dv),last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();keys=[];
     for(var i=1;i<=last;i++)keys.push(d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(i));}
-  var rows=[];keys.forEach(function(k){rows=rows.concat(rowsOf(k,ss));});
+  /* ดึงข้อมูลเฉพาะ "ช่วงวันที่ที่ต้องใช้ออกรายงาน" ตรงจากฐานข้อมูล
+     ไม่พึ่งแคชปฏิทินที่โหลดไว้ เพราะผู้ใช้อาจเลือกช่วงนอกเดือนที่กำลังดูอยู่ */
+  var startK=keys[0], endK=keys[keys.length-1];
+  var data;
+  try{ data = sb ? await fetchRange(startK,endK) : {sched:SCHED,book:BOOK}; }
+  catch(e){ showErr(e); return null; }
+  function schedOf(k){var x=data.sched[k]||{};return {am:x.am||[],pm:x.pm||[]};}
+  var rows=[];
+  keys.forEach(function(k){
+    ss.forEach(function(s){
+      schedOf(k)[s].forEach(function(cid){
+        clinic(cid).units.forEach(function(u){
+          var b=data.book[bkey(k,s,cid,u)];
+          if(b)rows.push({k:k,s:s,cid:cid,u:u,b:b});
+        });
+      });
+    });
+  });
   var t=sc==="month"?("ประจำเดือน"+TH_M[parseK(dv).getMonth()]+" พ.ศ. "+(parseK(dv).getFullYear()+543))
     :(thDate(dv)+(sc==="day"?"":" · "+SESS[sc]));
   return {rows:rows,title:t};
@@ -563,8 +667,8 @@ function toRow(r,i){var b=r.b;return [i+1,thShort(r.k),r.s==="am"?"เช้า"
  statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน",stamp(b.updatedAt),""];}
 function dlFile(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href);},1000);}
-function exportExcel(){
-  var c=collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
+async function exportExcel(){
+  var c=await collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
   var html='<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>'
    +'<table border="1"><tr><td colspan="16"><b>สำนักวิชาทันตแพทยศาสตร์ มทส. — รายงานการจองยูนิตปฏิบัติงานคลินิก '+esc(c.title)+"</b></td></tr><tr>"
    +HEAD.map(function(h){return "<th>"+h+"</th>";}).join("")+"</tr>"
@@ -572,8 +676,8 @@ function exportExcel(){
    +"</table></body></html>";
   dlFile(new Blob(["\ufeff"+html],{type:"application/vnd.ms-excel;charset=utf-8"}),"OHC-booking-"+$("expDate").value+".xls");
 }
-function exportPDF(){
-  var c=collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
+async function exportPDF(){
+  var c=await collect();if(!c)return;if(!c.rows.length){alert("ไม่มีข้อมูลการจองในช่วงที่เลือก");return;}
   var g={};c.rows.forEach(function(r){var gk=r.k+"|"+r.s+"|"+r.cid;(g[gk]=g[gk]||[]).push(r);});
   var blocks=Object.keys(g).sort().map(function(gk){
     var p=gk.split("|"),rs=g[gk].sort(function(a,b){return a.u-b.u;});
@@ -620,9 +724,11 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(
 
 /* ================= INIT ================= */
 try{
-  $("prevM").onclick=function(){VM--;if(VM<0){VM=11;VY--;}renderCal();};
-  $("nextM").onclick=function(){VM++;if(VM>11){VM=0;VY++;}renderCal();};
-  $("btnToday").onclick=function(){var n=firstWeekday(new Date());VY=n.getFullYear();VM=n.getMonth();selectDay(key(n));};
+  $("prevM").onclick=async function(){VM--;if(VM<0){VM=11;VY--;}
+    if(sb){try{await loadCalendarWindow();}catch(e){showErr(e);}} renderCal();};
+  $("nextM").onclick=async function(){VM++;if(VM>11){VM=0;VY++;}
+    if(sb){try{await loadCalendarWindow();}catch(e){showErr(e);}} renderCal();};
+  $("btnToday").onclick=function(){var n=firstWeekday(new Date());selectDay(key(n));};
   $("btnAdmin").onclick=function(){
     if(isAdmin){ doLogout(); }
     else{$("lgU").value="";$("lgP").value="";$("lgErr").textContent="";openM("mLogin");setTimeout(function(){$("lgU").focus();},80);}};
@@ -635,14 +741,34 @@ try{
   $("bPdf").onclick=exportPDF;
   $("bMgr").onclick=function(){renderMgr();openM("mClinic");};
   $("bAddC").onclick=function(){readMgr();CLINICS.push({id:"c"+Date.now(),name:"",units:[]});renderMgr();};
-  $("bSaveC").onclick=function(){readMgr();saveAll();closeM("mClinic");renderCal();renderDay();alert("บันทึกรายวิชาเรียบร้อย");};
-  $("bBak").onclick=function(){dlFile(new Blob([JSON.stringify({CLINICS:CLINICS,SCHED:SCHED,BOOK:BOOK},null,2)],{type:"application/json"}),"OHC-backup-"+key(new Date())+".json");};
-  $("bWipe").onclick=function(){if(!confirm("ล้างตารางคลินิก + การจองทั้งหมด?"))return;
-    SCHED={};BOOK={};saveAll();renderCal();renderDay();alert("ล้างข้อมูลแล้ว");};
+  $("bSaveC").onclick=async function(){
+    readMgr();
+    try{ await cloudSaveClinics(); }catch(e){ showErr(e); return; }
+    closeM("mClinic");renderCal();renderDay();alert("บันทึกรายวิชาเรียบร้อย");
+  };
+  $("bBak").onclick=async function(){
+    var data={CLINICS:CLINICS,SCHED:SCHED,BOOK:BOOK};
+    if(sb){
+      try{
+        var full=await fetchRange("0000-01-01","9999-12-31");
+        data={CLINICS:CLINICS,SCHED:full.sched,BOOK:full.book};
+      }catch(e){ showErr(e); }
+    }
+    dlFile(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),"OHC-backup-"+key(new Date())+".json");
+  };
+  $("bWipe").onclick=async function(){
+    if(!confirm("ล้างตารางคลินิก + การจองทั้งหมด (ทุกวันที่ ทุกปี) ?"))return;
+    if(sb){
+      var d1=await sb.from("bookings").delete().neq("date","");
+      var d2=await sb.from("schedule_entries").delete().neq("date","");
+      if(d1.error||d2.error){showErr(d1.error||d2.error);return;}
+    }
+    SCHED={};BOOK={};renderCal();renderDay();alert("ล้างข้อมูลแล้ว");
+  };
 
   (async function boot(){
     try{
-      if(sb){ await cloudLoad(); cloudSubscribe(); }
+      if(sb){ await cloudLoadClinics(); await loadCalendarWindow(); cloudSubscribe(); }
     }catch(e){ showErr(e); }
     refresh();
   })();
