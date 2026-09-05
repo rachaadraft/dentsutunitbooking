@@ -829,43 +829,60 @@ function doLogout(){
 }
 /* clinic manager */
 function renderMgr(){
-  $("mgrBody").innerHTML=CLINICS.length?CLINICS.map(function(c,i){
-    return '<div class="r2" style="grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center">'
+  $("mgrBody").innerHTML=CLINICS.length?CLINICS.map(function(c){
+    return '<div class="r2" style="grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center" data-id="'+esc(c.id)+'">'
       +'<input class="inp cm-n" value="'+esc(c.name)+'" placeholder="ชื่อวิชา">'
       +'<input class="inp cm-u" value="'+c.units.join(", ")+'" placeholder="211, 212, 213">'
-      +'<button class="btn sm danger" type="button" data-i="'+i+'">ลบ</button></div>';}).join("")
+      +'<button class="btn sm danger" type="button">ลบ</button></div>';}).join("")
     :'<div class="empty">ยังไม่มีรายวิชา — กดปุ่มด้านล่างเพื่อเพิ่ม</div>';
   Array.prototype.forEach.call($("mgrBody").querySelectorAll("button"),function(b){
-    b.onclick=function(){readMgr();CLINICS.splice(+b.getAttribute("data-i"),1);renderMgr();};});
+    b.onclick=function(){readMgr();var id=b.closest("[data-id]").getAttribute("data-id");
+      CLINICS=CLINICS.filter(function(c){return c.id!==id;});renderMgr();};});
 }
 function readMgr(){
-  var ns=$("mgrBody").querySelectorAll(".cm-n"),us=$("mgrBody").querySelectorAll(".cm-u");
-  if(!ns.length)return;
+  var rows=$("mgrBody").querySelectorAll("[data-id]");
+  if(!rows.length)return;
   var out=[];
-  for(var i=0;i<ns.length;i++){
-    var nm=ns[i].value.trim();if(!nm)continue;
-    out.push({id:(CLINICS[i]&&CLINICS[i].id)||"c"+Date.now()+i,name:nm,
-      units:us[i].value.split(",").map(function(x){return x.trim();}).filter(Boolean)});}
+  Array.prototype.forEach.call(rows,function(row){
+    var nm=row.querySelector(".cm-n").value.trim();if(!nm)return;
+    out.push({id:row.getAttribute("data-id"),name:nm,
+      units:row.querySelector(".cm-u").value.split(",").map(function(x){return x.trim();}).filter(Boolean)});});
   CLINICS=out;
 }
 
 /* ---- ผู้จัดการรายชื่ออาจารย์ ---- */
 function renderTeacherMgr(){
   $("tmgrBody").innerHTML=TEACHERS.length?TEACHERS.map(function(t,i){
-    return '<div class="r2" style="grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center">'
+    return '<div class="r2" style="grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:8px;align-items:center" data-id="'+esc(t.id)+'">'
+      +'<div style="display:flex;flex-direction:column;gap:2px">'
+      +'<button class="btn sm" type="button" data-move="up"'+(i===0?" disabled":"")+' title="เลื่อนขึ้น" style="padding:2px 8px;line-height:1">▲</button>'
+      +'<button class="btn sm" type="button" data-move="down"'+(i===TEACHERS.length-1?" disabled":"")+' title="เลื่อนลง" style="padding:2px 8px;line-height:1">▼</button>'
+      +'</div>'
       +'<input class="inp tm-n" value="'+esc(t.name)+'" placeholder="ชื่ออาจารย์">'
-      +'<button class="btn sm danger" type="button" data-i="'+i+'">ลบ</button></div>';}).join("")
+      +'<button class="btn sm danger" type="button">ลบ</button></div>';}).join("")
     :'<div class="empty">ยังไม่มีรายชื่ออาจารย์ — กดปุ่มด้านล่างเพื่อเพิ่ม</div>';
-  Array.prototype.forEach.call($("tmgrBody").querySelectorAll("button"),function(b){
-    b.onclick=function(){readTeacherMgr();TEACHERS.splice(+b.getAttribute("data-i"),1);renderTeacherMgr();};});
+  Array.prototype.forEach.call($("tmgrBody").querySelectorAll("[data-move]"),function(b){
+    b.onclick=function(){
+      readTeacherMgr();
+      var id=b.closest("[data-id]").getAttribute("data-id");
+      var idx=-1;for(var qi=0;qi<TEACHERS.length;qi++){if(TEACHERS[qi].id===id){idx=qi;break;}}
+      if(idx<0)return;
+      var swapWith=b.getAttribute("data-move")==="up"?idx-1:idx+1;
+      if(swapWith<0||swapWith>=TEACHERS.length)return;
+      var tmp=TEACHERS[idx];TEACHERS[idx]=TEACHERS[swapWith];TEACHERS[swapWith]=tmp;
+      renderTeacherMgr();
+    };});
+  Array.prototype.forEach.call($("tmgrBody").querySelectorAll(".btn.danger"),function(b){
+    b.onclick=function(){readTeacherMgr();var id=b.closest("[data-id]").getAttribute("data-id");
+      TEACHERS=TEACHERS.filter(function(t){return t.id!==id;});renderTeacherMgr();};});
 }
 function readTeacherMgr(){
-  var ns=$("tmgrBody").querySelectorAll(".tm-n");
-  if(!ns.length)return;
+  var rows=$("tmgrBody").querySelectorAll("[data-id]");
+  if(!rows.length)return;
   var out=[];
-  for(var i=0;i<ns.length;i++){
-    var nm=ns[i].value.trim();if(!nm)continue;
-    out.push({id:(TEACHERS[i]&&TEACHERS[i].id)||"t"+Date.now()+i,name:nm});}
+  Array.prototype.forEach.call(rows,function(row){
+    var nm=row.querySelector(".tm-n").value.trim();if(!nm)return;
+    out.push({id:row.getAttribute("data-id"),name:nm});});
   TEACHERS=out;
 }
 
