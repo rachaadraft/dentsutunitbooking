@@ -167,8 +167,9 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn primary" type="button" id="bExcel">⤓ Export Excel (.xls)</button>
-      <button class="btn" type="button" id="bPdf">⤓ Export PDF · A4 · TH Sarabun 16pt</button>
+      <button class="btn" type="button" id="bPdf">⤓ Export PDF · A4 · TH Sarabun 12pt</button>
       <button class="btn ghost" type="button" id="bMgr">⚙ จัดการรายวิชา / ยูนิต</button>
+      <button class="btn ghost" type="button" id="bMgrT">⚙ จัดการรายชื่ออาจารย์</button>
       <button class="btn ghost" type="button" id="bBak">⤓ สำรองข้อมูล (JSON)</button>
       <button class="btn danger" type="button" id="bWipe">🗑 ล้างข้อมูลทั้งหมด</button>
     </div>
@@ -197,6 +198,10 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
         <div class="f"><label>สิทธิการรักษา <span class="req">*</span></label><select id="fRight" class="inp"></select></div>
       </div>
       <div class="f"><label>รายละเอียดงานที่ทำ <span class="req">*</span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
+      <div id="workHint" style="margin:-6px 0 12px"></div>
+      <div class="f" id="fAssistWrap" style="display:none"><label>Assistant <span class="req">*</span></label>
+        <input id="fAssist" class="inp" placeholder="ชื่อ-นามสกุลผู้ช่วย"></div>
+      <div id="pedoCountInfo" style="margin:-6px 0 12px"></div>
       <div class="f"><label>หมายเหตุ</label><textarea id="fNote" class="inp" rows="2"></textarea></div>
       <div id="bkHist"></div>
     </div>
@@ -224,6 +229,14 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
   <div class="mb"><div id="mgrBody"></div><button class="btn sm" type="button" id="bAddC">+ เพิ่มรายวิชาใหม่</button></div>
   <div class="mf"><button class="btn" type="button" data-close="mClinic">ปิด</button>
     <button class="btn primary" type="button" id="bSaveC">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL teacher mgr -->
+<div class="mask" id="mTeacher"><div class="modal">
+  <div class="mh"><h2>จัดการรายชื่ออาจารย์</h2><p class="sub">รายชื่ออาจารย์ผู้ควบคุมคลินิก (ใช้เลือกในตารางคลินิกรายวัน)</p></div>
+  <div class="mb"><div id="tmgrBody"></div><button class="btn sm" type="button" id="bAddT">+ เพิ่มรายชื่ออาจารย์</button></div>
+  <div class="mf"><button class="btn" type="button" data-close="mTeacher">ปิด</button>
+    <button class="btn primary" type="button" id="bSaveT">บันทึก</button></div>
 </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -262,6 +275,36 @@ var TH_D=["อาทิตย์","จันทร์","อังคาร","พ
 var WK=["อา","จ","อ","พ","พฤ","ศ","ส"];
 var SESS={am:"ภาคเช้า (09:00–12:00)",pm:"ภาคบ่าย (13:00–16:00)"};
 
+/* ---- กติกาการจอง: ข้อความแนะนำ + เงื่อนไขพิเศษของคลินิก Pedo ---- */
+var PEDO_ID="pedo";
+var EXAM9_HINT="กรณีขอสอบภาคปฏิบัติ 9 งาน นักศึกษาจำเป็นต้องแจ้งให้อาจารย์ผู้ควบคุมคลินิกในวันนั้น ๆ ทราบอย่างน้อย 1 สัปดาห์ จึงจะมีสิทธิ์ลงสอบในคาบนั้น ๆ ได้ และในแต่ละคาบ ไม่สามารถขอสอบได้เกิน 2 ยูนิต";
+var PEDO_HINT_LIST=[
+  "นักศึกษาสามารถทำ Charting ได้ไม่เกิน 2 ยูนิต ต่อคาบปฏิบัติงาน",
+  "หัตถการ Class II, Pulp treatment, SSC นักศึกษาจำเป็นต้องมี Assistant และลงปฏิบัติงานได้ไม่เกิน 2 ยูนิตต่อคาบปฏิบัติงาน",
+  "หัตถการในข้อ 1) และ 2) สามารถลงปฏิบัติงานได้ไม่เกิน 3 ยูนิต ต่อคาบปฏิบัติงาน"
+];
+function pedoCat(work){
+  var w=(work||"").toLowerCase();
+  return {
+    charting:/charting/.test(w),
+    other:/(class\s*ii(?!i)|pulp|ssc)/.test(w)
+  };
+}
+/* นับจำนวนยูนิตอื่น (ไม่รวมยูนิตที่กำลังแก้ไข) ในคาบเดียวกันของคลินิก Pedo ที่เข้าเกณฑ์ charting/class II/pulp/ssc */
+function pedoCounts(dateK,sess,excludeUnit){
+  var c={charting:0,other:0,total:0};
+  clinic(PEDO_ID).units.forEach(function(u){
+    if(excludeUnit!=null && String(u)===String(excludeUnit))return;
+    var b=BOOK[bkey(dateK,sess,PEDO_ID,u)];
+    if(!b)return;
+    var cat=pedoCat(b.work);
+    if(cat.charting)c.charting++;
+    if(cat.other)c.other++;
+    if(cat.charting||cat.other)c.total++;
+  });
+  return c;
+}
+
 /* ========== STORAGE ปลอดภัย (แคชสำรองในเครื่อง) ========== */
 var MEM={};
 function sGet(k,d){try{var v=localStorage.getItem(k);if(v!=null)return JSON.parse(v);}catch(e){}
@@ -279,11 +322,11 @@ function sDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){}}
    ========================================================================== */
 function bxRow(r){ /* แปลงแถวจากฐานข้อมูล -> object ที่หน้าเว็บใช้ */
   return {grade:r.grade,base:r.base,sName:r.s_name,pPfx:r.p_pfx,pName:r.p_name,hn:r.hn,
-    right:r.patient_right,work:r.work,note:r.note,createdAt:r.created_at,updatedAt:r.updated_at,log:r.log||[]};
+    right:r.patient_right,work:r.work,assist:r.assist,note:r.note,createdAt:r.created_at,updatedAt:r.updated_at,log:r.log||[]};
 }
 function bxOut(d){ /* แปลง object ของหน้าเว็บ -> แถวสำหรับบันทึกลงฐานข้อมูล */
   return {grade:d.grade,base:d.base,s_name:d.sName,p_pfx:d.pPfx,p_name:d.pName,hn:d.hn,
-    patient_right:d.right,work:d.work,note:d.note,created_at:d.createdAt,updated_at:d.updatedAt,log:d.log||[]};
+    patient_right:d.right,work:d.work,assist:d.assist,note:d.note,created_at:d.createdAt,updated_at:d.updatedAt,log:d.log||[]};
 }
 
 async function cloudLoadClinics(){
@@ -302,14 +345,47 @@ async function cloudSaveClinics(){
   var insRes=await sb.from("clinics").insert(rows);
   if(insRes.error) showErr(insRes.error);
 }
+async function cloudLoadTeachers(){
+  if(!sb) return;
+  var res=await sb.from("teachers").select("id,name").order("sort_order",{ascending:true});
+  if(res.error) throw res.error;
+  TEACHERS=(res.data||[]).map(function(r){return {id:r.id,name:r.name};});
+  sSet("ohc_teachers",TEACHERS);
+}
+async function cloudSaveTeachers(){
+  if(!sb) return;
+  var delRes=await sb.from("teachers").delete().neq("id","");
+  if(delRes.error){showErr(delRes.error);return;}
+  if(!TEACHERS.length) return;
+  var rows=TEACHERS.map(function(t,i){return {id:t.id,name:t.name,sort_order:i};});
+  var insRes=await sb.from("teachers").insert(rows);
+  if(insRes.error) showErr(insRes.error);
+}
+async function writeTeacherDuty(k,s,teacherId){
+  if(sb){
+    if(teacherId){
+      var res=await sb.from("teacher_duty").upsert({date:k,session:s,teacher_id:teacherId});
+      if(res.error){showErr(res.error);return false;}
+    } else {
+      var res2=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s);
+      if(res2.error){showErr(res2.error);return false;}
+    }
+  }
+  TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=teacherId||"";
+  return true;
+}
+function teacherName(id){for(var i=0;i<TEACHERS.length;i++)if(TEACHERS[i].id===id)return TEACHERS[i].name;return "";}
+function dutyOf(k,s){return (TDUTY[k]&&TDUTY[k][s])||"";}
 
-/* โหลดตาราง+การจองเฉพาะ "ช่วงวันที่" ที่ต้องใช้ (คืนค่าเป็น object ใหม่ ไม่ยุ่งกับตัวแปร global) */
+/* โหลดตาราง+การจอง+อาจารย์เวรเฉพาะ "ช่วงวันที่" ที่ต้องใช้ (คืนค่าเป็น object ใหม่ ไม่ยุ่งกับตัวแปร global) */
 async function fetchRange(startK,endK){
-  if(!sb) return {sched:{},book:{}};
+  if(!sb) return {sched:{},book:{},tduty:{}};
   var schedRes=await sb.from("schedule_entries").select("date,session,clinic_id").gte("date",startK).lte("date",endK);
   if(schedRes.error) throw schedRes.error;
   var bookRes=await sb.from("bookings").select("*").gte("date",startK).lte("date",endK);
   if(bookRes.error) throw bookRes.error;
+  var dutyRes=await sb.from("teacher_duty").select("date,session,teacher_id").gte("date",startK).lte("date",endK);
+  if(dutyRes.error) throw dutyRes.error;
   var sc={};
   (schedRes.data||[]).forEach(function(r){
     sc[r.date]=sc[r.date]||{am:[],pm:[]};
@@ -319,7 +395,11 @@ async function fetchRange(startK,endK){
   (bookRes.data||[]).forEach(function(r){
     bk[bkey(r.date,r.session,r.clinic_id,r.unit)]=bxRow(r);
   });
-  return {sched:sc,book:bk};
+  var td={};
+  (dutyRes.data||[]).forEach(function(r){
+    td[r.date]=td[r.date]||{}; td[r.date][r.session]=r.teacher_id;
+  });
+  return {sched:sc,book:bk,tduty:td};
 }
 /* ช่วงวันที่ของ "กริดปฏิทิน" ที่กำลังแสดง (42 ช่อง รวมวันเดือนก่อน/หลังที่โผล่มาด้วย) */
 function gridRange(y,m){
@@ -333,7 +413,7 @@ async function loadCalendarWindow(){
   if(!sb) return;
   var r=gridRange(VY,VM);
   var data=await fetchRange(r.startK,r.endK);
-  SCHED=data.sched; BOOK=data.book; loadedRangeK=r;
+  SCHED=data.sched; BOOK=data.book; TDUTY=data.tduty; loadedRangeK=r;
 }
 /* กันเคสขอบเดือน เช่น copyPrev() ที่อาจอ้างถึงวันนอกช่วงที่โหลดไว้ */
 async function ensureDateLoaded(k){
@@ -342,14 +422,19 @@ async function ensureDateLoaded(k){
   var data=await fetchRange(k,k);
   SCHED[k]=data.sched[k]||{am:[],pm:[]};
   Object.keys(data.book).forEach(function(bk){BOOK[bk]=data.book[bk];});
+  if(data.tduty[k]) TDUTY[k]=data.tduty[k];
 }
 function cloudSubscribe(){
   if(!sb) return;
   sb.channel("ohc_sync")
     .on("postgres_changes",{event:"*",schema:"public",table:"bookings"},function(){ resyncAndRender(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"schedule_entries"},function(){ resyncAndRender(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"teacher_duty"},function(){ resyncAndRender(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"clinics"},function(){
       cloudLoadClinics().then(function(){renderCal();renderDay();}).catch(showErr);
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"teachers"},function(){
+      cloudLoadTeachers().then(function(){renderDay();}).catch(showErr);
     })
     .subscribe();
 }
@@ -358,8 +443,10 @@ function resyncAndRender(){
 }
 
 var CLINICS=sGet("ohc_clinics",DEF_CLINICS);
+var TEACHERS=sGet("ohc_teachers",[]);
 var SCHED={};   /* แคชของ "ช่วงเดือนที่กำลังแสดง" เท่านั้น ไม่ใช่ข้อมูลทั้งหมด */
 var BOOK={};
+var TDUTY={};   /* แคชอาจารย์เวรของ "ช่วงเดือนที่กำลังแสดง" */
 var isAdmin=sGet("ohc_admin",false)===true;
 
 /* ================= HELPERS ================= */
@@ -434,10 +521,12 @@ async function selectDay(k){
 }
 function renderDay(){
   var k=curKey,sc=sched(k),dl=deadlineOf(k);
+  var dutyName=teacherName(dutyOf(k,curSess));
   $("dayHead").innerHTML='<h2 style="margin:0">'+esc(thDate(k))+"</h2>"
     +'<p class="sub" style="margin:0">'+(isLocked(k)
       ?'<span style="color:var(--red)">🔒 ปิดรับการจองแล้ว — กำหนดปิด '+dlText(dl)+"</span>"+(isAdmin?' <b style="color:var(--w700)">— ผู้ดูแลยังแก้ไขได้</b>':"")
-      :"⏳ จอง / แก้ไขได้ถึง <b style=\"color:var(--w700)\">"+dlText(dl)+"</b>")+"</p>";
+      :"⏳ จอง / แก้ไขได้ถึง <b style=\"color:var(--w700)\">"+dlText(dl)+"</b>")+"</p>"
+    +'<p class="sub" style="margin:4px 0 0">👨‍⚕️ อาจารย์ผู้ควบคุมคลินิก ('+SESS[curSess]+'): <b>'+(dutyName?esc(dutyName):(isAdmin?'ยังไม่ระบุ':'—'))+"</b></p>";
 
   $("tabs").innerHTML=["am","pm"].map(function(s){
     return '<div class="tab'+(curSess===s?" on":"")+'" data-s="'+s+'">'+SESS[s]+' <small style="opacity:.7">· '+sc[s].length+" วิชา</small></div>";}).join("");
@@ -450,7 +539,11 @@ function renderDay(){
       +(CLINICS.length?CLINICS.map(function(c){return '<label><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
         +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+")</span></label>";}).join("")
         :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
-      +'</div><button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
+      +'</div><div class="f" style="max-width:320px;margin-bottom:10px"><label>อาจารย์ผู้ควบคุมคลินิก ('+SESS[curSess]+')</label>'
+      +'<select id="dutySel" class="inp"><option value="">— ยังไม่ระบุ —</option>'
+      +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
+      +'</select></div>'
+      +'<button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
       +'<button class="btn sm" type="button" id="bCopyPrev">คัดลอกจากวันทำการก่อนหน้า</button></div>';
     if($("bSaveSch"))$("bSaveSch").onclick=saveSchedule;
     if($("bCopyPrev"))$("bCopyPrev").onclick=copyPrev;
@@ -497,11 +590,11 @@ function renderSum(){
   $("sum").innerHTML=Object.keys(byC).map(function(cid){
     return '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--w800)">'+esc(clinic(cid).name)
      +' <span style="color:var(--muted);font-weight:400;font-size:13px">('+byC[cid].length+" ยูนิต)</span></h3>"
-     +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
+     +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
      +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
        return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
         +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+"</td><td>"+(b.hn?esc(b.hn):"—")+"</td><td>"+esc(b.right)+"</td>"
-        +"<td>"+esc(b.work)+"</td><td>"+(esc(b.note)||"-")+"</td>"
+        +"<td>"+esc(b.work)+"</td><td>"+(esc(b.assist)||"-")+"</td><td>"+(esc(b.note)||"-")+"</td>"
         +'<td><span class="badge '+(ok?"b-ok":"b-wait")+'">'+(ok?"จองแล้ว":"รอยืนยัน")+"</span></td>"
         +'<td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">'+stamp(b.updatedAt)+"<br>จองเมื่อ "+stamp(b.createdAt)+"</td></tr>";}).join("")
      +"</tbody></table></div>";}).join("");
@@ -509,6 +602,26 @@ function renderSum(){
 
 /* ================= BOOKING ================= */
 var editK=null;
+function renderWorkHint(cid){
+  if(cid===PEDO_ID){
+    $("workHint").innerHTML='<div class="note" style="font-size:12.5px">'+PEDO_HINT_LIST.map(function(t,i){return (i+1)+") "+esc(t);}).join("<br>")+"</div>";
+  } else if(cid!=="ortho"){
+    $("workHint").innerHTML='<div class="note" style="font-size:12.5px">'+esc(EXAM9_HINT)+"</div>";
+  } else {
+    $("workHint").innerHTML="";
+  }
+}
+function updatePedoLive(){
+  if(!editK||editK.c!==PEDO_ID){$("fAssistWrap").style.display="none";$("pedoCountInfo").innerHTML="";return;}
+  var cat=pedoCat($("fWork").value);
+  $("fAssistWrap").style.display=cat.other?"":"none";
+  var cnt=pedoCounts(editK.k,editK.s,editK.u);
+  var willCharting=cnt.charting+(cat.charting?1:0);
+  var willOther=cnt.other+(cat.other?1:0);
+  var willTotal=cnt.total+((cat.charting||cat.other)?1:0);
+  $("pedoCountInfo").innerHTML='<div class="note" style="font-size:12.5px">คาบนี้ (Pedo) ขณะนี้มีงาน Charting/Class II/Pulp/SSC รวม '+cnt.total+"/3 ยูนิต (Charting "+cnt.charting+"/2 · Class II/Pulp/SSC "+cnt.other+"/2)"
+    +(cat.charting||cat.other?"<br>หากบันทึกยูนิตนี้ จะกลายเป็น "+willTotal+"/3 (Charting "+willCharting+"/2 · Class II/Pulp/SSC "+willOther+"/2)":"")+"</div>";
+}
 function openBook(cid,u){
   editK={k:curKey,s:curSess,c:cid,u:u};
   var b=BOOK[bkey(curKey,curSess,cid,u)];
@@ -519,6 +632,10 @@ function openBook(cid,u){
   function V(id,v){$(id).value=v==null?"":v;}
   V("fGrade",b&&b.grade);V("fBase",b&&b.base);V("fSName",b&&b.sName);V("fPPfx",(b&&b.pPfx)||"นาย");
   V("fPName",b&&b.pName);V("fHN",b&&b.hn);V("fRight",b&&b.right);V("fWork",b&&b.work);V("fNote",b&&b.note);
+  V("fAssist",b&&b.assist);
+  renderWorkHint(cid);
+  $("fWork").oninput=updatePedoLive;
+  updatePedoLive();
   var ed=canEdit(curKey);
   Array.prototype.forEach.call(document.querySelectorAll("#bkForm .inp"),function(i){i.disabled=!ed;});
   $("bkSave").style.display=ed?"":"none";
@@ -536,8 +653,21 @@ async function saveBooking(){
   if(!canEdit(k)){alert("ปิดรับการจองแล้ว ไม่สามารถบันทึกได้");return;}
   function g(id){return $(id).value.trim();}
   var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:g("fPPfx"),pName:g("fPName"),
-    hn:g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),note:g("fNote")};
+    hn:g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),assist:g("fAssist"),note:g("fNote")};
   if(!d.grade||!d.base||!d.sName||!d.right||!d.work){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
+  if(c===PEDO_ID){
+    var cat=pedoCat(d.work);
+    if(cat.other && !d.assist){alert("หัตถการ Class II / Pulp treatment / SSC จำเป็นต้องกรอกชื่อ Assistant ก่อนบันทึก");return;}
+    if(cat.charting||cat.other){
+      var cnt=pedoCounts(k,s,u);
+      var willCharting=cnt.charting+(cat.charting?1:0);
+      var willOther=cnt.other+(cat.other?1:0);
+      var willTotal=cnt.total+1;
+      if(willTotal>3){alert("คาบนี้มีนักศึกษาทำงาน Charting/Class II/Pulp/SSC ครบ 3 ยูนิตแล้ว ไม่สามารถลงงานประเภทนี้เพิ่มได้ กรุณาเปลี่ยนรายละเอียดงาน");return;}
+      if(cat.charting && willCharting>2){alert("คาบนี้มีงาน Charting ครบ 2 ยูนิตแล้ว ยูนิตถัดไปสามารถลงได้เฉพาะ Class II / Pulp treatment / SSC เท่านั้น");return;}
+      if(cat.other && willOther>2){alert("คาบนี้มีงาน Class II / Pulp treatment / SSC ครบ 2 ยูนิตแล้ว ยูนิตถัดไปสามารถลงได้เฉพาะ Charting เท่านั้น");return;}
+    }
+  }
   var bk=bkey(k,s,c,u),old=BOOK[bk],nowI=new Date().toISOString();
   d.createdAt=(old&&old.createdAt)||nowI; d.updatedAt=nowI;
   d.log=((old&&old.log)||[]).concat([{at:nowI,act:(old?"แก้ไขข้อมูล":"จองยูนิต")+(isAdmin?" (โดยผู้ดูแล)":" โดย นศ.ทพ."+d.sName)}]);
@@ -581,6 +711,11 @@ async function saveSchedule(){
   var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
   var ok=await writeScheduleDay(curKey,curSess,ids);
   if(!ok)return;
+  var tSel=$("dutySel");
+  if(tSel){
+    var okT=await writeTeacherDuty(curKey,curSess,tSel.value);
+    if(!okT)return;
+  }
   renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
 }
 async function copyPrev(){
@@ -631,6 +766,26 @@ function readMgr(){
   CLINICS=out;
 }
 
+/* ---- ผู้จัดการรายชื่ออาจารย์ ---- */
+function renderTeacherMgr(){
+  $("tmgrBody").innerHTML=TEACHERS.length?TEACHERS.map(function(t,i){
+    return '<div class="r2" style="grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center">'
+      +'<input class="inp tm-n" value="'+esc(t.name)+'" placeholder="ชื่ออาจารย์">'
+      +'<button class="btn sm danger" type="button" data-i="'+i+'">ลบ</button></div>';}).join("")
+    :'<div class="empty">ยังไม่มีรายชื่ออาจารย์ — กดปุ่มด้านล่างเพื่อเพิ่ม</div>';
+  Array.prototype.forEach.call($("tmgrBody").querySelectorAll("button"),function(b){
+    b.onclick=function(){readTeacherMgr();TEACHERS.splice(+b.getAttribute("data-i"),1);renderTeacherMgr();};});
+}
+function readTeacherMgr(){
+  var ns=$("tmgrBody").querySelectorAll(".tm-n");
+  if(!ns.length)return;
+  var out=[];
+  for(var i=0;i<ns.length;i++){
+    var nm=ns[i].value.trim();if(!nm)continue;
+    out.push({id:(TEACHERS[i]&&TEACHERS[i].id)||"t"+Date.now()+i,name:nm});}
+  TEACHERS=out;
+}
+
 /* ================= EXPORT ================= */
 async function collect(){
   var dv=$("expDate").value,sc=$("expScope").value;
@@ -661,9 +816,9 @@ async function collect(){
     :(thDate(dv)+(sc==="day"?"":" · "+SESS[sc]));
   return {rows:rows,title:t};
 }
-var HEAD=["ลำดับ","วันที่","ช่วงเวลา","คลินิก","ยูนิต","ชั้นปี","ชื่อ-นามสกุลนักศึกษา","ฐานฝึก","ชื่อ-นามสกุลผู้ป่วย","HN","สิทธิการรักษา","รายละเอียดงานที่ทำ","หมายเหตุ","สถานะ","บันทึกล่าสุด","ลงชื่อ"];
+var HEAD=["ลำดับ","วันที่","ช่วงเวลา","คลินิก","ยูนิต","ชั้นปี","ชื่อ-นามสกุลนักศึกษา","ฐานฝึก","ชื่อ-นามสกุลผู้ป่วย","HN","สิทธิการรักษา","รายละเอียดงานที่ทำ","Assistant","หมายเหตุ","สถานะ","บันทึกล่าสุด","ลงชื่อ"];
 function toRow(r,i){var b=r.b;return [i+1,thShort(r.k),r.s==="am"?"เช้า":"บ่าย",clinic(r.cid).name,r.u,b.grade,
- "นศ.ทพ."+b.sName,b.base,b.pName?(b.pPfx+" "+b.pName):"-",b.hn||"-",b.right,b.work,b.note||"-",
+ "นศ.ทพ."+b.sName,b.base,b.pName?(b.pPfx+" "+b.pName):"-",b.hn||"-",b.right,b.work,b.assist||"-",b.note||"-",
  statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน",stamp(b.updatedAt),""];}
 function dlFile(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href);},1000);}
@@ -690,22 +845,23 @@ async function exportPDF(){
      +rs.map(function(r){var b=r.b;return '<tr><td class="c"><b>'+r.u+'</b></td><td class="c">'+esc(b.grade)+"</td>"
        +"<td>นศ.ทพ."+esc(b.sName)+'<br><span class="s">ฐานฝึก: '+esc(b.base)+"</span></td>"
        +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+'<br><span class="s">HN: '+esc(b.hn||"—")+" · "+(statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน")+"</span></td>"
-       +"<td>"+esc(b.right)+"</td><td>"+esc(b.work)+'<br><span class="s">'+(esc(b.note)||"-")+"<br>บันทึก: "+stamp(b.updatedAt)+"</span></td>"
+       +"<td>"+esc(b.right)+"</td><td>"+esc(b.work)+(b.assist?'<br><span class="s">Assistant: '+esc(b.assist)+"</span>":"")+'<br><span class="s">'+(esc(b.note)||"-")+"<br>บันทึก: "+stamp(b.updatedAt)+"</span></td>"
        +'<td class="sign"></td></tr>';}).join("")+"</tbody></table></div>";}).join("");
   var w=window.open("","_blank");
   if(!w){alert("เบราว์เซอร์บล็อกป๊อปอัป — กรุณาอนุญาต popup แล้วลองใหม่");return;}
   w.document.write('<html><head><meta charset="UTF-8"><title>รายงานการจองยูนิตคลินิก</title>'
-   +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><style>'
+   +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400&display=swap" rel="stylesheet"><style>'
    +"@page{size:A4 portrait;margin:15mm 12mm}"
-   +"body{font-family:'TH Sarabun New','TH SarabunPSK','Sarabun',serif;font-size:16pt;color:#000;margin:0}"
-   +"h1{font-size:18pt;margin:0;text-align:center}h2{font-size:16pt;margin:2px 0 12px;text-align:center;font-weight:400}"
+   +"*{font-weight:400 !important}"
+   +"body{font-family:'TH Sarabun New','TH SarabunPSK','Sarabun',serif;font-size:12pt;color:#000;margin:0;font-weight:400}"
+   +"h1{font-size:14pt;margin:0;text-align:center;font-weight:400}h2{font-size:12pt;margin:2px 0 12px;text-align:center;font-weight:400}"
    +".blk{margin-bottom:14px;page-break-inside:avoid}"
-   +".bh{font-size:16pt;font-weight:700;background:#f2e3ea;border:1px solid #000;border-bottom:none;padding:3px 6px}"
-   +"table{border-collapse:collapse;width:100%;font-size:16pt;table-layout:fixed}"
-   +"th,td{border:1px solid #000;padding:2px 5px;vertical-align:top;word-wrap:break-word}"
-   +"th{background:#f8f0f4;text-align:center}td.c{text-align:center}"
-   +".s{font-size:14pt;color:#333}.sign{height:44px}"
-   +".ft{margin-top:10px;font-size:14pt;display:flex;justify-content:space-between}</style></head><body>"
+   +".bh{font-size:12pt;font-weight:400;background:#f2e3ea;border:1px solid #000;border-bottom:none;padding:3px 6px}"
+   +"table{border-collapse:collapse;width:100%;font-size:12pt;table-layout:fixed}"
+   +"th,td{border:1px solid #000;padding:2px 5px;vertical-align:top;word-wrap:break-word;font-weight:400}"
+   +"th{background:#f8f0f4;text-align:center;font-weight:400}td.c{text-align:center}"
+   +".s{font-size:10.5pt;color:#333}.sign{height:44px}"
+   +".ft{margin-top:10px;font-size:10.5pt;display:flex;justify-content:space-between}</style></head><body>"
    +"<h1>สำนักวิชาทันตแพทยศาสตร์ มหาวิทยาลัยเทคโนโลยีสุรนารี</h1>"
    +"<h2>รายงานการจองยูนิตปฏิบัติงานคลินิก — "+esc(c.title)+"</h2>"+blocks
    +'<div class="ft"><span>รวมทั้งสิ้น '+c.rows.length+" รายการ</span><span>พิมพ์เมื่อ "+stamp(new Date())+"</span></div>"
@@ -746,12 +902,19 @@ try{
     try{ await cloudSaveClinics(); }catch(e){ showErr(e); return; }
     closeM("mClinic");renderCal();renderDay();alert("บันทึกรายวิชาเรียบร้อย");
   };
+  $("bMgrT").onclick=function(){renderTeacherMgr();openM("mTeacher");};
+  $("bAddT").onclick=function(){readTeacherMgr();TEACHERS.push({id:"t"+Date.now(),name:""});renderTeacherMgr();};
+  $("bSaveT").onclick=async function(){
+    readTeacherMgr();
+    try{ await cloudSaveTeachers(); }catch(e){ showErr(e); return; }
+    closeM("mTeacher");renderDay();alert("บันทึกรายชื่ออาจารย์เรียบร้อย");
+  };
   $("bBak").onclick=async function(){
-    var data={CLINICS:CLINICS,SCHED:SCHED,BOOK:BOOK};
+    var data={CLINICS:CLINICS,TEACHERS:TEACHERS,SCHED:SCHED,BOOK:BOOK,TDUTY:TDUTY};
     if(sb){
       try{
         var full=await fetchRange("0000-01-01","9999-12-31");
-        data={CLINICS:CLINICS,SCHED:full.sched,BOOK:full.book};
+        data={CLINICS:CLINICS,TEACHERS:TEACHERS,SCHED:full.sched,BOOK:full.book,TDUTY:full.tduty};
       }catch(e){ showErr(e); }
     }
     dlFile(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),"OHC-backup-"+key(new Date())+".json");
@@ -761,14 +924,15 @@ try{
     if(sb){
       var d1=await sb.from("bookings").delete().neq("date","");
       var d2=await sb.from("schedule_entries").delete().neq("date","");
-      if(d1.error||d2.error){showErr(d1.error||d2.error);return;}
+      var d3=await sb.from("teacher_duty").delete().neq("date","");
+      if(d1.error||d2.error||d3.error){showErr(d1.error||d2.error||d3.error);return;}
     }
-    SCHED={};BOOK={};renderCal();renderDay();alert("ล้างข้อมูลแล้ว");
+    SCHED={};BOOK={};TDUTY={};renderCal();renderDay();alert("ล้างข้อมูลแล้ว");
   };
 
   (async function boot(){
     try{
-      if(sb){ await cloudLoadClinics(); await loadCalendarWindow(); cloudSubscribe(); }
+      if(sb){ await cloudLoadClinics(); await cloudLoadTeachers(); await loadCalendarWindow(); cloudSubscribe(); }
     }catch(e){ showErr(e); }
     refresh();
   })();
