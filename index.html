@@ -361,21 +361,21 @@ async function cloudSaveTeachers(){
   var insRes=await sb.from("teachers").insert(rows);
   if(insRes.error) showErr(insRes.error);
 }
-async function writeTeacherDuty(k,s,teacherId){
+async function writeTeacherDuty(k,s,clinicId,teacherId){
   if(sb){
     if(teacherId){
-      var res=await sb.from("teacher_duty").upsert({date:k,session:s,teacher_id:teacherId});
+      var res=await sb.from("teacher_duty").upsert({date:k,session:s,clinic_id:clinicId,teacher_id:teacherId});
       if(res.error){showErr(res.error);return false;}
     } else {
-      var res2=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s);
+      var res2=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s).eq("clinic_id",clinicId);
       if(res2.error){showErr(res2.error);return false;}
     }
   }
-  TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=teacherId||"";
+  TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=TDUTY[k][s]||{}; TDUTY[k][s][clinicId]=teacherId||"";
   return true;
 }
 function teacherName(id){for(var i=0;i<TEACHERS.length;i++)if(TEACHERS[i].id===id)return TEACHERS[i].name;return "";}
-function dutyOf(k,s){return (TDUTY[k]&&TDUTY[k][s])||"";}
+function dutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId])||"";}
 
 /* โหลดตาราง+การจอง+อาจารย์เวรเฉพาะ "ช่วงวันที่" ที่ต้องใช้ (คืนค่าเป็น object ใหม่ ไม่ยุ่งกับตัวแปร global) */
 async function fetchRange(startK,endK){
@@ -384,7 +384,7 @@ async function fetchRange(startK,endK){
   if(schedRes.error) throw schedRes.error;
   var bookRes=await sb.from("bookings").select("*").gte("date",startK).lte("date",endK);
   if(bookRes.error) throw bookRes.error;
-  var dutyRes=await sb.from("teacher_duty").select("date,session,teacher_id").gte("date",startK).lte("date",endK);
+  var dutyRes=await sb.from("teacher_duty").select("date,session,clinic_id,teacher_id").gte("date",startK).lte("date",endK);
   if(dutyRes.error) throw dutyRes.error;
   var sc={};
   (schedRes.data||[]).forEach(function(r){
@@ -397,7 +397,7 @@ async function fetchRange(startK,endK){
   });
   var td={};
   (dutyRes.data||[]).forEach(function(r){
-    td[r.date]=td[r.date]||{}; td[r.date][r.session]=r.teacher_id;
+    td[r.date]=td[r.date]||{}; td[r.date][r.session]=td[r.date][r.session]||{}; td[r.date][r.session][r.clinic_id]=r.teacher_id;
   });
   return {sched:sc,book:bk,tduty:td};
 }
@@ -521,12 +521,10 @@ async function selectDay(k){
 }
 function renderDay(){
   var k=curKey,sc=sched(k),dl=deadlineOf(k);
-  var dutyName=teacherName(dutyOf(k,curSess));
   $("dayHead").innerHTML='<h2 style="margin:0">'+esc(thDate(k))+"</h2>"
     +'<p class="sub" style="margin:0">'+(isLocked(k)
       ?'<span style="color:var(--red)">🔒 ปิดรับการจองแล้ว — กำหนดปิด '+dlText(dl)+"</span>"+(isAdmin?' <b style="color:var(--w700)">— ผู้ดูแลยังแก้ไขได้</b>':"")
-      :"⏳ จอง / แก้ไขได้ถึง <b style=\"color:var(--w700)\">"+dlText(dl)+"</b>")+"</p>"
-    +'<p class="sub" style="margin:4px 0 0">👨‍⚕️ อาจารย์ผู้ควบคุมคลินิก ('+SESS[curSess]+'): <b>'+(dutyName?esc(dutyName):(isAdmin?'ยังไม่ระบุ':'—'))+"</b></p>";
+      :"⏳ จอง / แก้ไขได้ถึง <b style=\"color:var(--w700)\">"+dlText(dl)+"</b>")+"</p>";
 
   $("tabs").innerHTML=["am","pm"].map(function(s){
     return '<div class="tab'+(curSess===s?" on":"")+'" data-s="'+s+'">'+SESS[s]+' <small style="opacity:.7">· '+sc[s].length+" วิชา</small></div>";}).join("");
@@ -534,16 +532,18 @@ function renderDay(){
     t.onclick=function(){curSess=t.getAttribute("data-s");curClinic=null;renderDay();};});
 
   if(isAdmin){
-    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]
+    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' และอาจารย์ผู้ควบคุมของแต่ละคลินิก (แต่ละคลินิกเลือกอาจารย์ได้อิสระ ไม่จำเป็นต้องเป็นคนเดียวกัน)'
       +'<div class="chk" id="schedChk" style="margin:10px 0">'
-      +(CLINICS.length?CLINICS.map(function(c){return '<label><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
-        +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+")</span></label>";}).join("")
+      +(CLINICS.length?CLINICS.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)">'
+          +'<label style="flex:1;min-width:200px"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
+          +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+')</span></label>'
+          +'<select class="inp dutySel" data-cid="'+c.id+'" style="max-width:220px"><option value="">— อาจารย์ผู้ควบคุม —</option>'
+          +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
+          +'</select></div>';
+      }).join("")
         :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
-      +'</div><div class="f" style="max-width:320px;margin-bottom:10px"><label>อาจารย์ผู้ควบคุมคลินิก ('+SESS[curSess]+')</label>'
-      +'<select id="dutySel" class="inp"><option value="">— ยังไม่ระบุ —</option>'
-      +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
-      +'</select></div>'
-      +'<button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
+      +'</div><button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
       +'<button class="btn sm" type="button" id="bCopyPrev">คัดลอกจากวันทำการก่อนหน้า</button></div>';
     if($("bSaveSch"))$("bSaveSch").onclick=saveSchedule;
     if($("bCopyPrev"))$("bCopyPrev").onclick=copyPrev;
@@ -551,8 +551,9 @@ function renderDay(){
 
   var list=sc[curSess];
   $("chips").innerHTML=list.length
-    ? '<div class="chips">'+list.map(function(id){var c=clinic(id);
-        return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+c.units.length+" ยูนิต</small></div>";}).join("")+"</div>"
+    ? '<div class="chips">'+list.map(function(id){var c=clinic(id),tn=teacherName(dutyOf(k,curSess,id));
+        return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+c.units.length+" ยูนิต</small>"
+          +(tn?'<br><small style="opacity:.75">อ.'+esc(tn)+"</small>":"")+"</div>";}).join("")+"</div>"
     : '<div class="empty">ยังไม่มีคลินิกใน'+SESS[curSess]+"ของวันนี้"+(isAdmin?'<br><span class="hint">เลือกรายวิชาจากกล่องด้านบนแล้วกดบันทึก</span>':"")+"</div>";
   Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
     el.onclick=function(){var id=el.getAttribute("data-c");curClinic=(curClinic===id?null:id);renderDay();};});
@@ -562,9 +563,10 @@ function renderDay(){
 function renderUnits(){
   var el=$("units");
   if(!curClinic){el.innerHTML="";return;}
-  var c=clinic(curClinic);
+  var c=clinic(curClinic),tn=teacherName(dutyOf(curKey,curSess,curClinic));
   var map={free:["u-free","ว่าง"],pend:["u-pend","รอยืนยัน"],book:["u-book","จองแล้ว"]};
-  el.innerHTML='<div style="margin-top:16px"><b style="color:var(--w800)">'+esc(c.name)+"</b> — คลิกเลือกยูนิตเพื่อจอง</div>"
+  el.innerHTML='<div style="margin-top:16px"><b style="color:var(--w800)">'+esc(c.name)+"</b> — คลิกเลือกยูนิตเพื่อจอง"
+   +(tn?' <span style="color:var(--muted)">· อาจารย์ผู้ควบคุม: <b>'+esc(tn)+"</b></span>":(isAdmin?' <span class="hint">(ยังไม่ระบุอาจารย์ผู้ควบคุม)</span>':""))+"</div>"
    +'<div class="units">'+c.units.map(function(u){
       var b=BOOK[bkey(curKey,curSess,curClinic,u)],st=statusOf(b);
       return '<div class="unit '+map[st][0]+'" data-u="'+u+'"><div class="no">'+u+"</div>"
@@ -626,7 +628,8 @@ function openBook(cid,u){
   editK={k:curKey,s:curSess,c:cid,u:u};
   var b=BOOK[bkey(curKey,curSess,cid,u)];
   $("bkTitle").textContent="ยูนิต "+u+" · "+clinic(cid).name;
-  $("bkSub").textContent=thDate(curKey)+" · "+SESS[curSess];
+  var dutyTn=teacherName(dutyOf(curKey,curSess,cid));
+  $("bkSub").textContent=thDate(curKey)+" · "+SESS[curSess]+(dutyTn?" · อาจารย์ผู้ควบคุม: "+dutyTn:"");
   $("fBase").innerHTML='<option value="">— เลือก —</option>'+BASES.map(function(x){return "<option>"+x+"</option>";}).join("");
   $("fRight").innerHTML='<option value="">— เลือก —</option>'+RIGHTS.map(function(x){return "<option>"+x+"</option>";}).join("");
   function V(id,v){$(id).value=v==null?"":v;}
@@ -711,9 +714,10 @@ async function saveSchedule(){
   var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
   var ok=await writeScheduleDay(curKey,curSess,ids);
   if(!ok)return;
-  var tSel=$("dutySel");
-  if(tSel){
-    var okT=await writeTeacherDuty(curKey,curSess,tSel.value);
+  var dutySels=document.querySelectorAll("#schedChk .dutySel");
+  for(var i=0;i<dutySels.length;i++){
+    var sel=dutySels[i],cid=sel.getAttribute("data-cid");
+    var okT=await writeTeacherDuty(curKey,curSess,cid,sel.value);
     if(!okT)return;
   }
   renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
@@ -724,8 +728,13 @@ async function copyPrev(){
   await ensureDateLoaded(pk);
   var p=sched(pk);
   if(!p[curSess].length){alert("วันทำการก่อนหน้าไม่มีตารางในช่วงเวลานี้");return;}
-  var ok=await writeScheduleDay(curKey,curSess,p[curSess].slice());
+  var ids=p[curSess].slice();
+  var ok=await writeScheduleDay(curKey,curSess,ids);
   if(!ok)return;
+  for(var i=0;i<ids.length;i++){
+    var cid=ids[i],tid=dutyOf(pk,curSess,cid);
+    if(tid){ var okT=await writeTeacherDuty(curKey,curSess,cid,tid); if(!okT)return; }
+  }
   renderCal();renderDay();
 }
 function syncAdmin(){
