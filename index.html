@@ -174,6 +174,13 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
       <button class="btn danger" type="button" id="bWipe">🗑 ล้างข้อมูลทั้งหมด</button>
     </div>
   </div>
+  <div style="text-align:center;margin:28px 0 8px;color:var(--muted);font-size:12px;line-height:1.6">
+    Developed by Rachadol Thuephut, DDS<br>
+    School of Geriatric Oral Health<br>
+    Institute of Dentistry<br>
+    Suranaree University of Technology<br><br>
+    © 2026 Suranaree University of Technology. All Rights Reserved.
+  </div>
 </div>
 
 <!-- MODAL จอง -->
@@ -424,6 +431,16 @@ async function ensureDateLoaded(k){
   Object.keys(data.book).forEach(function(bk){BOOK[bk]=data.book[bk];});
   if(data.tduty[k]) TDUTY[k]=data.tduty[k];
 }
+/* บังคับดึงข้อมูลของวันที่ k ใหม่จากฐานข้อมูลเสมอ (ใช้ตอนเจอข้อมูลชนกัน เพื่ออัปเดตแคชให้ตรงกับความจริง) */
+async function forceRefreshDate(k){
+  if(!sb) return;
+  var data=await fetchRange(k,k);
+  SCHED[k]=data.sched[k]||{am:[],pm:[]};
+  Object.keys(BOOK).forEach(function(bk){ if(bk.indexOf(k+"|")===0) delete BOOK[bk]; });
+  Object.keys(data.book).forEach(function(bk){BOOK[bk]=data.book[bk];});
+  TDUTY[k]=data.tduty[k]||{};
+}
+function isDupKeyErr(e){return !!(e && (e.code==="23505" || /duplicate key|already exists/i.test(e.message||"")));}
 function cloudSubscribe(){
   if(!sb) return;
   sb.channel("ohc_sync")
@@ -553,7 +570,7 @@ function renderDay(){
   $("chips").innerHTML=list.length
     ? '<div class="chips">'+list.map(function(id){var c=clinic(id),tn=teacherName(dutyOf(k,curSess,id));
         return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+c.units.length+" ยูนิต</small>"
-          +(tn?'<br><small style="opacity:.75">อ.'+esc(tn)+"</small>":"")+"</div>";}).join("")+"</div>"
+          +(tn?'<br><small style="opacity:.75">'+esc(tn)+"</small>":"")+"</div>";}).join("")+"</div>"
     : '<div class="empty">ยังไม่มีคลินิกใน'+SESS[curSess]+"ของวันนี้"+(isAdmin?'<br><span class="hint">เลือกรายวิชาจากกล่องด้านบนแล้วกดบันทึก</span>':"")+"</div>";
   Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
     el.onclick=function(){var id=el.getAttribute("data-c");curClinic=(curClinic===id?null:id);renderDay();};});
@@ -624,7 +641,7 @@ function updatePedoLive(){
   $("pedoCountInfo").innerHTML='<div class="note" style="font-size:12.5px">คาบนี้ (Pedo) ขณะนี้มีงาน Charting/Class II/Pulp/SSC รวม '+cnt.total+"/3 ยูนิต (Charting "+cnt.charting+"/2 · Class II/Pulp/SSC "+cnt.other+"/2)"
     +(cat.charting||cat.other?"<br>หากบันทึกยูนิตนี้ จะกลายเป็น "+willTotal+"/3 (Charting "+willCharting+"/2 · Class II/Pulp/SSC "+willOther+"/2)":"")+"</div>";
 }
-function openBook(cid,u){
+async function openBook(cid,u){
   editK={k:curKey,s:curSess,c:cid,u:u};
   var b=BOOK[bkey(curKey,curSess,cid,u)];
   $("bkTitle").textContent="ยูนิต "+u+" · "+clinic(cid).name;
@@ -643,12 +660,29 @@ function openBook(cid,u){
   Array.prototype.forEach.call(document.querySelectorAll("#bkForm .inp"),function(i){i.disabled=!ed;});
   $("bkSave").style.display=ed?"":"none";
   $("bkDel").style.display=(b&&ed)?"":"none";
-  $("bkLock").innerHTML=ed
+  $("bkLock").innerHTML=(ed
     ?'<div class="note">⏳ จอง/แก้ไขได้ถึง <b>'+dlText(deadlineOf(curKey))+'</b><br><span style="font-size:12.5px">(15:00 ของวันทำการก่อนหน้า — คลินิกวันจันทร์ปิดรับตั้งแต่ศุกร์ 15:00)</span></div>'
-    :'<div class="note lock">🔒 ปิดรับการจอง/แก้ไขแล้ว — เลยกำหนด '+dlText(deadlineOf(curKey))+"</div>";
+    :'<div class="note lock">🔒 ปิดรับการจอง/แก้ไขแล้ว — เลยกำหนด '+dlText(deadlineOf(curKey))+"</div>")
+    +'<div class="note lock" style="margin-top:8px">รายละเอียดคลินิกที่เปิดในสัปดาห์ถัดไปจะอัปเดตทุกวันพฤหัสบดีก่อนหน้า <b>กรณีนักศึกษาปี 5/6 เรียนไม่ตรงตามแผน สามารถจองยูนิตได้หลังเวลา 20:00 น. ของวันพฤหัสบดีก่อนหน้าเท่านั้น กรณีที่มีการแย่งจองยูนิตนักศึกษาที่เรียนตามแผน จะถือว่าการจองนั้นเป็นโมฆะทุกกรณี</b></div>'
+    +'<div class="note lock" style="margin-top:8px">กรณีการจองยูนิตอยู่ในสถานะ "รอยืนยัน" นักศึกษาจำเป็นต้องเข้ามากรอกข้อมูลให้ครบถ้วนภายในเวลา 14:00 น. ของวันก่อนหน้า หากเกินระยะเวลาค่าที่กรอกไว้จะถูกล้างโดยระบบ</div>';
   $("bkHist").innerHTML=(b&&b.log&&b.log.length)
     ?'<div class="hist"><b>ประวัติการบันทึก</b><br>'+b.log.slice().reverse().map(function(l){return "• "+stamp(l.at)+" — "+esc(l.act);}).join("<br>")+"</div>":"";
   openM("mBook");
+  if(isAdmin && sb){
+    try{
+      var dl=await sb.from("booking_deletion_log").select("*")
+        .eq("date",curKey).eq("session",curSess).eq("clinic_id",cid).eq("unit",String(u))
+        .order("deleted_at",{ascending:false});
+      if(!dl.error && dl.data && dl.data.length){
+        $("bkHist").innerHTML+='<div class="hist" style="margin-top:8px"><b>ประวัติการลบ (เห็นเฉพาะผู้ดูแล)</b><br>'
+          +dl.data.map(function(r){
+            return "• ลบเมื่อ "+stamp(r.deleted_at)+" โดย "+esc(r.deleted_by)
+              +"<br>&nbsp;&nbsp;ก่อนหน้านี้: นศ.ทพ."+esc(r.prev_s_name||"-")+" จองไว้เมื่อ "+(r.prev_created_at?stamp(r.prev_created_at):"-")
+              +" · ผู้ป่วย: "+esc(r.prev_p_name||"-");
+          }).join("<br>")+"</div>";
+      }
+    }catch(e){}
+  }
 }
 async function saveBooking(){
   if(!editK)return;
@@ -676,8 +710,35 @@ async function saveBooking(){
   d.log=((old&&old.log)||[]).concat([{at:nowI,act:(old?"แก้ไขข้อมูล":"จองยูนิต")+(isAdmin?" (โดยผู้ดูแล)":" โดย นศ.ทพ."+d.sName)}]);
   if(sb){
     var row=bxOut(d); row.date=k; row.session=s; row.clinic_id=c; row.unit=String(u);
-    var res=await sb.from("bookings").upsert(row);
-    if(res.error){showErr(res.error);return;}
+    if(!old){
+      /* ยูนิตนี้ยังว่างตามที่เห็นในเครื่อง — insert เข้าตรงๆ ถ้ามีคนอื่นจองแทรกไปก่อนแล้ว
+         ฐานข้อมูลจะปฏิเสธด้วย duplicate-key ทันที (กันข้อมูลชนกัน ไม่ให้ใครเขียนทับใคร) */
+      var ins=await sb.from("bookings").insert(row);
+      if(ins.error){
+        if(isDupKeyErr(ins.error)){
+          try{ await forceRefreshDate(k); }catch(e){}
+          alert("ยูนิตนี้ถูกจองสำเร็จไปแล้ว กรุณาเลือกจองยูนิตอื่น");
+          closeM("mBook"); renderCal(); renderDay(); return;
+        }
+        showErr(ins.error); return;
+      }
+    } else {
+      /* แก้ไขรายการที่มีอยู่แล้ว — update เฉพาะแถวที่ตรงคีย์เดิม ไม่เขียนทับข้อมูลของคนอื่น */
+      var upd=await sb.from("bookings").update(row).eq("date",k).eq("session",s).eq("clinic_id",c).eq("unit",String(u)).select();
+      if(upd.error){showErr(upd.error);return;}
+      if(!upd.data||!upd.data.length){
+        /* แถวเดิมหายไปแล้ว (เช่นถูกลบ) — ลองสร้างใหม่แทน ถ้าชนกับของคนอื่นอีกให้ปฏิเสธเหมือนกัน */
+        var ins2=await sb.from("bookings").insert(row);
+        if(ins2.error){
+          if(isDupKeyErr(ins2.error)){
+            try{ await forceRefreshDate(k); }catch(e){}
+            alert("ยูนิตนี้ถูกจองสำเร็จไปแล้ว กรุณาเลือกจองยูนิตอื่น");
+            closeM("mBook"); renderCal(); renderDay(); return;
+          }
+          showErr(ins2.error); return;
+        }
+      }
+    }
   }
   BOOK[bk]=d; closeM("mBook"); renderCal(); renderDay();
   alert((statusOf(d)==="book"?"✅ จองสำเร็จ — สถานะ: จองแล้ว":"⚠️ บันทึกแล้ว — สถานะ: รอยืนยัน (ยังไม่ระบุชื่อผู้ป่วย/HN)")
@@ -687,7 +748,20 @@ async function deleteBooking(){
   if(!editK)return;
   if(!canEdit(editK.k)){alert("ปิดรับการแก้ไขแล้ว");return;}
   if(!confirm("ยืนยันลบการจองยูนิต "+editK.u+" ("+clinic(editK.c).name+") ?"))return;
+  var deleter=prompt("กรุณากรอกชื่อผู้ลบข้อมูล (สำหรับบันทึกประวัติ):","");
+  if(deleter==null)return; /* กดยกเลิก */
+  deleter=deleter.trim();
+  if(!deleter){alert("กรุณากรอกชื่อผู้ลบข้อมูล จึงจะลบรายการได้");return;}
+  var old=BOOK[bkey(editK.k,editK.s,editK.c,editK.u)];
   if(sb){
+    if(old){
+      var logRes=await sb.from("booking_deletion_log").insert({
+        date:editK.k,session:editK.s,clinic_id:editK.c,unit:String(editK.u),
+        prev_s_name:old.sName||null,prev_p_name:old.pName||null,prev_hn:old.hn||null,
+        prev_created_at:old.createdAt||null,deleted_by:deleter,reason:"ลบโดยผู้ใช้งานหน้าเว็บ"
+      });
+      if(logRes.error){showErr(logRes.error);return;}
+    }
     var res=await sb.from("bookings").delete()
       .eq("date",editK.k).eq("session",editK.s).eq("clinic_id",editK.c).eq("unit",String(editK.u));
     if(res.error){showErr(res.error);return;}
