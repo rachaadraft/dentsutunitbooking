@@ -274,9 +274,9 @@ html[data-theme="dark"] .flu-book{background:#3a1c22}
         <input id="fPName" class="inp" placeholder="ชื่อ-นามสกุลผู้ป่วย"></div></div>
       <div class="r2">
         <div class="f"><label>HN <span class="hint" id="fHNHint">(ตัวเลข, หากเว้นว่าง → รอยืนยัน)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
-        <div class="f"><label>สิทธิการรักษา <span class="req">*</span></label><select id="fRight" class="inp"></select></div>
+        <div class="f"><label>สิทธิการรักษา <span class="req" id="fRightReq">*</span> <span class="hint" id="fRightHint"></span></label><select id="fRight" class="inp"></select></div>
       </div>
-      <div class="f"><label>รายละเอียดงานที่ทำ <span class="req">*</span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
+      <div class="f"><label>รายละเอียดงานที่ทำ <span class="req" id="fWorkReq">*</span> <span class="hint" id="fWorkEmergHint"></span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
       <div id="workHint" style="margin:-6px 0 12px"></div>
       <div class="f" id="fAssistWrap" style="display:none"><label>Assistant <span class="req">*</span></label>
         <input id="fAssist" class="inp" placeholder="ชื่อ-นามสกุลผู้ช่วย"></div>
@@ -837,6 +837,14 @@ function updateEmergUI(){
   if(on){$("fPName").value="";$("fHN").value="";}
   $("fPNameHint").textContent=on?"(Emergency case — ไม่ต้องกรอก)":"(หากเว้นว่าง → รอยืนยัน)";
   $("fHNHint").textContent=on?"(Emergency case — ไม่ต้องกรอก)":"(ตัวเลข, หากเว้นว่าง → รอยืนยัน)";
+  $("fRight").disabled=on||!ed;
+  $("fWork").disabled=on||!ed;
+  if(on){$("fRight").value="";$("fWork").value="ขอรับ Emergency case";}
+  else if($("fWork").value==="ขอรับ Emergency case"){$("fWork").value="";}
+  $("fRightReq").style.display=on?"none":"";
+  $("fWorkReq").style.display=on?"none":"";
+  $("fRightHint").textContent=on?"(Emergency case — ไม่ต้องกรอก)":"";
+  $("fWorkEmergHint").textContent=on?"(กรอกอัตโนมัติ — Emergency case)":"";
 }
 function updatePedoLive(){
   if(!editK||editK.c!==PEDO_ID){$("fAssistWrap").style.display="none";$("pedoCountInfo").innerHTML="";return;}
@@ -905,9 +913,9 @@ async function saveBooking(){
   function g(id){return $(id).value.trim();}
   var isEmerg=EMERG_CLINICS.indexOf(c)>-1 && $("fEmerg").checked;
   var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:g("fPPfx"),pName:isEmerg?"":g("fPName"),
-    hn:isEmerg?"":g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),assist:g("fAssist"),
+    hn:isEmerg?"":g("fHN").replace(/\D/g,""),right:isEmerg?"":g("fRight"),work:isEmerg?"ขอรับ Emergency case":g("fWork"),assist:g("fAssist"),
     emergency:isEmerg,note:g("fNote")};
-  if(!d.grade||!d.base||!d.sName||!d.right||!d.work){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
+  if(!d.grade||!d.base||!d.sName||(!isEmerg&&(!d.right||!d.work))){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
   if(c===PEDO_ID){
     var cat=pedoCat(d.work);
     if(cat.other && !d.assist){alert("หัตถการ Class II / Pulp treatment / SSC จำเป็นต้องกรอกชื่อ Assistant ก่อนบันทึก");return;}
