@@ -749,7 +749,7 @@ function renderFloor1(k,s){
   var c=clinicsOnFloor(1)[0]||null;
   var units=c?c.units:[141,142,143,144,145,146];
   var boxes=units.map(function(u){return fluBox(u,c,k,s);}).join("");
-  return '<div class="fl1wrap"><div class="flname">Diag</div><div class="flus">'+boxes+"</div></div>"
+  return '<div class="fl1wrap"><div class="flname" style="text-align: center;">Diag</div><div class="flus">'+boxes+"</div></div>"
     +(c?"":'<p class="hint" style="text-align:center;margin-top:8px">*คลินิก Diag ยังไม่ถูกเพิ่มเข้าระบบจองออนไลน์ จึงแสดงเฉพาะหมายเลขยูนิต ไม่มีสถานะการจอง</p>');
 }
 async function renderFloorOverview(){
