@@ -562,8 +562,14 @@ function cloudSubscribe(){
     })
     .subscribe();
 }
+var savingInProgress=false;
+var resyncTimer=null;
 function resyncAndRender(){
-  loadCalendarWindow().then(function(){ renderCal(); renderDay(); }).catch(showErr);
+  if(savingInProgress) return; /* กำลังบันทึกอยู่ - จะ render ให้เองทันทีที่บันทึกเสร็จอยู่แล้ว ไม่ต้องให้ realtime มาแย่งชิงกลางคัน */
+  clearTimeout(resyncTimer);
+  resyncTimer=setTimeout(function(){
+    loadCalendarWindow().then(function(){ renderCal(); renderDay(); }).catch(showErr);
+  },450);
 }
 
 var CLINICS=sGet("ohc_clinics",DEF_CLINICS);
@@ -612,6 +618,7 @@ function firstWeekday(d){var x=new Date(d.getTime());while(isWknd(x))x.setDate(x
 var now0=new Date();
 var VY=now0.getFullYear(),VM=now0.getMonth();
 var curKey=key(firstWeekday(now0)),curSess="am",curClinic=null;
+var schedDirty=false; /* true = แอดมินกำลังแก้ไขตารางคลินิกค้างไว้ ยังไม่ได้กดบันทึก - ห้าม render ทับ */
 
 /* ================= CALENDAR ================= */
 function dayStat(k){var sc=sched(k),t=0,u=0;
@@ -648,7 +655,7 @@ function renderCal(){
 /* ================= DAY PANEL ================= */
 async function selectDay(k){
   var d=parseK(k); if(isWknd(d))return;
-  curKey=k;curClinic=null;
+  curKey=k;curClinic=null;schedDirty=false;
   var monthChanged=(d.getMonth()!==VM||d.getFullYear()!==VY);
   if(monthChanged){VY=d.getFullYear();VM=d.getMonth();}
   if(monthChanged && sb){ try{ await loadCalendarWindow(); }catch(e){ showErr(e); } }
@@ -666,28 +673,36 @@ function renderDay(){
   $("tabs").innerHTML=["am","pm"].map(function(s){
     return '<div class="tab'+(curSess===s?" on":"")+'" data-s="'+s+'">'+SESS[s]+' <small style="opacity:.7">· '+sc[s].length+" วิชา</small></div>";}).join("");
   Array.prototype.forEach.call($("tabs").children,function(t){
-    t.onclick=function(){curSess=t.getAttribute("data-s");curClinic=null;renderDay();};});
+    t.onclick=function(){curSess=t.getAttribute("data-s");curClinic=null;schedDirty=false;renderDay();};});
 
   if(isAdmin){
-    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' อาจารย์ผู้ควบคุม และฐานฝึกของแต่ละคลินิก (แต่ละคลินิกเลือกได้อิสระ ไม่จำเป็นต้องเป็นแบบเดียวกัน)'
-      +'<div class="schedGrid" id="schedChk" style="margin:10px 0">'
-      +(CLINICS.length?CLINICS.map(function(c){
-        return '<div class="schedRow">'
-          +'<label class="schedName"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
-          +' <span class="schedUnits">('+c.units.join(", ")+')</span></label>'
-          +'<select class="inp dutySel" data-cid="'+c.id+'"><option value="">— อาจารย์ผู้ควบคุม —</option>'
-          +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
-          +'</select>'
-          +'<select class="inp baseSel" data-cid="'+c.id+'"><option value="">— ฐานฝึก —</option>'
-          +BASES.map(function(bn){return '<option value="'+esc(bn)+'"'+(baseDutyOf(k,curSess,c.id)===bn?" selected":"")+'>'+esc(bn)+"</option>";}).join("")
-          +'</select></div>';
-      }).join("")
-        :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
-      +'</div><button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
-      +'<button class="btn sm" type="button" id="bCopyPrev">คัดลอกจากวันทำการก่อนหน้า</button></div>';
-    if($("bSaveSch"))$("bSaveSch").onclick=saveSchedule;
-    if($("bCopyPrev"))$("bCopyPrev").onclick=copyPrev;
-  } else $("adminSched").innerHTML="";
+    if(schedDirty && $("schedChk")){
+      /* กำลังแก้ตารางค้างอยู่ (ยังไม่กดบันทึก) - ห้ามสร้าง dropdown ใหม่ทับ ไม่งั้นค่าที่เพิ่งเลือกจะหาย */
+    } else {
+      $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' อาจารย์ผู้ควบคุม และฐานฝึกของแต่ละคลินิก (แต่ละคลินิกเลือกได้อิสระ ไม่จำเป็นต้องเป็นแบบเดียวกัน)'
+        +'<div class="schedGrid" id="schedChk" style="margin:10px 0">'
+        +(CLINICS.length?CLINICS.map(function(c){
+          return '<div class="schedRow">'
+            +'<label class="schedName"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
+            +' <span class="schedUnits">('+c.units.join(", ")+')</span></label>'
+            +'<select class="inp dutySel" data-cid="'+c.id+'"><option value="">— อาจารย์ผู้ควบคุม —</option>'
+            +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
+            +'</select>'
+            +'<select class="inp baseSel" data-cid="'+c.id+'"><option value="">— ฐานฝึก —</option>'
+            +BASES.map(function(bn){return '<option value="'+esc(bn)+'"'+(baseDutyOf(k,curSess,c.id)===bn?" selected":"")+'>'+esc(bn)+"</option>";}).join("")
+            +'</select></div>';
+        }).join("")
+          :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
+        +'</div><span id="schedDirtyHint" class="hint" style="display:none;color:var(--red)">● มีการแก้ไขที่ยังไม่บันทึก — กด "บันทึกตารางคลินิก" ก่อนออกจากหน้านี้</span><br>'
+        +'<button class="btn primary sm" type="button" id="bSaveSch">บันทึกตารางคลินิก</button> '
+        +'<button class="btn sm" type="button" id="bCopyPrev">คัดลอกจากวันทำการก่อนหน้า</button></div>';
+      if($("bSaveSch"))$("bSaveSch").onclick=saveSchedule;
+      if($("bCopyPrev"))$("bCopyPrev").onclick=copyPrev;
+      Array.prototype.forEach.call($("schedChk").querySelectorAll("input,select"),function(el){
+        el.addEventListener("change",function(){schedDirty=true;var h=$("schedDirtyHint");if(h)h.style.display="";});
+      });
+    }
+  } else { $("adminSched").innerHTML=""; schedDirty=false; }
 
   var list=sc[curSess];
   $("chips").innerHTML=list.length
@@ -986,32 +1001,38 @@ async function writeScheduleDay(k,s,ids){
   return true;
 }
 async function saveSchedule(){
-  var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
-  var ok=await writeScheduleDay(curKey,curSess,ids);
-  if(!ok)return;
-  var dutySels=document.querySelectorAll("#schedChk .dutySel");
-  for(var i=0;i<dutySels.length;i++){
-    var sel=dutySels[i],cid=sel.getAttribute("data-cid");
-    var baseSel=document.querySelector('#schedChk .baseSel[data-cid="'+cid+'"]');
-    var okT=await writeClinicDuty(curKey,curSess,cid,sel.value,baseSel?baseSel.value:"");
-    if(!okT)return;
-  }
-  renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
+  savingInProgress=true;
+  try{
+    var ids=[];Array.prototype.forEach.call(document.querySelectorAll("#schedChk input:checked"),function(i){ids.push(i.value);});
+    var ok=await writeScheduleDay(curKey,curSess,ids);
+    if(!ok)return;
+    var dutySels=document.querySelectorAll("#schedChk .dutySel");
+    for(var i=0;i<dutySels.length;i++){
+      var sel=dutySels[i],cid=sel.getAttribute("data-cid");
+      var baseSel=document.querySelector('#schedChk .baseSel[data-cid="'+cid+'"]');
+      var okT=await writeClinicDuty(curKey,curSess,cid,sel.value,baseSel?baseSel.value:"");
+      if(!okT)return;
+    }
+    schedDirty=false;renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
+  } finally { savingInProgress=false; }
 }
 async function copyPrev(){
-  var d=parseK(curKey);do{d.setDate(d.getDate()-1);}while(isWknd(d));
-  var pk=key(d);
-  await ensureDateLoaded(pk);
-  var p=sched(pk);
-  if(!p[curSess].length){alert("วันทำการก่อนหน้าไม่มีตารางในช่วงเวลานี้");return;}
-  var ids=p[curSess].slice();
-  var ok=await writeScheduleDay(curKey,curSess,ids);
-  if(!ok)return;
-  for(var i=0;i<ids.length;i++){
-    var cid=ids[i],tid=dutyOf(pk,curSess,cid),bn=baseDutyOf(pk,curSess,cid);
-    if(tid||bn){ var okT=await writeClinicDuty(curKey,curSess,cid,tid,bn); if(!okT)return; }
-  }
-  renderCal();renderDay();
+  savingInProgress=true;
+  try{
+    var d=parseK(curKey);do{d.setDate(d.getDate()-1);}while(isWknd(d));
+    var pk=key(d);
+    await ensureDateLoaded(pk);
+    var p=sched(pk);
+    if(!p[curSess].length){alert("วันทำการก่อนหน้าไม่มีตารางในช่วงเวลานี้");return;}
+    var ids=p[curSess].slice();
+    var ok=await writeScheduleDay(curKey,curSess,ids);
+    if(!ok)return;
+    for(var i=0;i<ids.length;i++){
+      var cid=ids[i],tid=dutyOf(pk,curSess,cid),bn=baseDutyOf(pk,curSess,cid);
+      if(tid||bn){ var okT=await writeClinicDuty(curKey,curSess,cid,tid,bn); if(!okT)return; }
+    }
+    schedDirty=false;renderCal();renderDay();
+  } finally { savingInProgress=false; }
 }
 function syncAdmin(){
   $("btnAdmin").textContent=isAdmin?"ออกจากระบบผู้ดูแล":"เข้าสู่ระบบผู้ดูแล";
