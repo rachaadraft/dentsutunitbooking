@@ -7,32 +7,52 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
- --bg:#faf6f8;--line:#e8d9e0;--text:#2a1220;--muted:#8a6e7c;
+ --bg:#faf6f8;--line:#e8d9e0;--text:#2a1220;--muted:#8a6e7c;--surface:#fff;
  --w900:#2f0718;--w800:#430d24;--w700:#5c1035;--w600:#761a45;--w400:#b06a8c;--w100:#f6e7ee;--w50:#fdf7fa;
+ --accent:#761a45;--accent-dark:#5c1035;--accent2:#2f0718;
  --green:#15803d;--yellow:#ca8a04;--red:#c81e2b;
  --grey:#eceaee;--grey-t:#a9a2ae;
  --sh:0 1px 2px rgba(47,7,24,.06),0 6px 20px rgba(47,7,24,.08)}
+html[data-theme="dark"]{
+ --bg:#191218;--line:#3a2c37;--text:#f1e6ec;--muted:#b79aab;--surface:#241b23;
+ --w900:#f6e7ee;--w800:#f0d8e4;--w700:#e7add0;--w600:#c583ac;--w400:#8a5875;--w100:#3a2530;--w50:#2a1c25;
+ --green:#4ade80;--yellow:#facc15;--red:#f4667a;
+ --grey:#2e2530;--grey-t:#8d7b8a;
+ --sh:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.4)}
+html[data-theme="dark"] #err{background:#3a1418;color:#ffb3bd;border-color:#5c1e28}
+html[data-theme="dark"] .btn.danger{border-color:#5c1e28}
+html[data-theme="dark"] .btn.danger:hover{background:#3a1418}
+html[data-theme="dark"] .ev.am{background:#3a2530;color:var(--w700)}
+html[data-theme="dark"] .ev.pm{background:#2e2340;color:#c9a3e8}
+html[data-theme="dark"] .u-free{background:#122a1c}
+html[data-theme="dark"] .u-pend{background:#2e2810}
+html[data-theme="dark"] .u-book{background:#3a1c22}
+html[data-theme="dark"] .b-ok{background:#123a24;color:#7ee2a8}
+html[data-theme="dark"] .b-wait{background:#3a3110;color:#f2d675}
+html[data-theme="dark"] .note.lock{background:#3a1418;border-color:#5c1e28;color:#ffb3bd}
+html[data-theme="dark"] .note.warn{background:#332b0f;border-color:#6b5a1a;color:#f1e6ec}
+html[data-theme="dark"] .note.warn{background:#3a2f10;border-color:#7a5f10;color:#f1e6ec}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.6}
 button,input,select,textarea{font-family:inherit;font-size:15px}
 .wrap{max-width:1120px;margin:0 auto;padding:0 16px 70px}
 .spacer{flex:1}
 #err{display:none;background:#fef2f2;color:#8f1220;border:1px solid #f3c9cd;padding:12px;margin:12px;border-radius:10px;font-size:13.5px}
-header{background:linear-gradient(100deg,var(--w900),var(--w600));position:sticky;top:0;z-index:40;box-shadow:0 2px 14px rgba(47,7,24,.3)}
+header{background:linear-gradient(100deg,#2f0718,#761a45);position:sticky;top:0;z-index:40;box-shadow:0 2px 14px rgba(47,7,24,.3)}
 .hd{max-width:1120px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px;color:#fff}
 .logo{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.34);display:grid;place-items:center;font-weight:700;font-size:13px}
 .hd h1{font-size:16.5px;margin:0;font-weight:600}
 .hd p{margin:0;font-size:12px;opacity:.82}
-.btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:500;white-space:nowrap;transition:.15s}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--text);padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:500;white-space:nowrap;transition:.15s}
 .btn:hover{background:var(--w50);border-color:var(--w400)}
-.btn.primary{background:var(--w700);border-color:var(--w700);color:#fff}
-.btn.primary:hover{background:var(--w800)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-dark)}
 .btn.line{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:#fff}
 .btn.line:hover{background:rgba(255,255,255,.28)}
 .btn.danger{color:var(--red);border-color:#f3c9cd}.btn.danger:hover{background:#fef2f2}
 .btn.ghost{background:transparent}
 .btn.sm{padding:5px 11px;font-size:13.5px;border-radius:8px}
-.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:18px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:18px;margin-top:18px}
 .card h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--w800)}
 .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
 .hint{font-size:12.5px;color:var(--muted)}
@@ -40,16 +60,16 @@ header{background:linear-gradient(100deg,var(--w900),var(--w600));position:stick
 /* ---------- ปฏิทิน : หัวตาราง + ช่องวันที่ อยู่ใน grid เดียวกัน ---------- */
 .cal-top{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;position:relative}
 .cal-title{font-size:22px;font-weight:700;color:var(--w800);min-width:210px;text-align:center}
-.nav{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px;color:var(--w700);line-height:1}
+.nav{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;color:var(--w700);line-height:1}
 .nav:hover{background:var(--w100);border-color:var(--w400)}
 .cal-top .today-btn{position:absolute;right:0}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);gap:1px}
 .wk{background:var(--w100);text-align:center;padding:10px 2px;font-size:13px;font-weight:600;color:var(--w800)}
 .wk.off{color:var(--grey-t)}
-.cell{min-height:112px;background:#fff;padding:6px 7px 8px;cursor:pointer;display:flex;flex-direction:column;gap:3px;position:relative;transition:background .12s;overflow:hidden}
+.cell{min-height:112px;background:var(--surface);padding:6px 7px 8px;cursor:pointer;display:flex;flex-direction:column;gap:3px;position:relative;transition:background .12s;overflow:hidden}
 .cell:hover{background:var(--w50)}
 .cell.out{background:#fcf9fb}.cell.out .num{color:#d9cbd3}
-.cell.today .num{background:var(--w700);color:#fff}
+.cell.today .num{background:var(--accent);color:#fff}
 .cell.sel{background:var(--w100);box-shadow:inset 0 0 0 2px var(--w700)}
 .cell.off{background:var(--grey);cursor:not-allowed}
 .cell.off:hover{background:var(--grey)}
@@ -65,15 +85,15 @@ header{background:linear-gradient(100deg,var(--w900),var(--w600));position:stick
 
 /* ---------- รายวัน ---------- */
 .tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
-.tab{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500}
-.tab.on{background:var(--w700);color:#fff;border-color:var(--w700)}
+.tab{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500}
+.chip{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500}
 .chip:hover{border-color:var(--w400)}
-.chip.on{background:var(--w900);color:#fff;border-color:var(--w900)}
+.chip.on{background:var(--accent2);color:#fff;border-color:var(--accent2)}
 .chip small{opacity:.65;font-weight:400}
 .units{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;margin-top:14px}
-.unit{border-radius:12px;padding:14px;background:#fff;cursor:pointer;border:2px solid;transition:.15s}
+.unit{border-radius:12px;padding:14px;background:var(--surface);cursor:pointer;border:2px solid;transition:.15s}
 .unit:hover{transform:translateY(-1px);box-shadow:var(--sh)}
 .unit .no{font-size:22px;font-weight:700}
 .unit .st{display:flex;align-items:center;gap:6px;font-size:13px}
@@ -93,22 +113,24 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
 /* ---------- modal ---------- */
 .mask{position:fixed;inset:0;background:rgba(42,18,32,.55);display:none;z-index:100;align-items:flex-start;justify-content:center;padding:26px 14px;overflow:auto}
 .mask.on{display:flex}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(42,18,32,.35)}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(42,18,32,.35)}
 .mh{padding:18px 22px 2px}.mh h2{margin:0;font-size:17px;color:var(--w800)}
 .mb{padding:8px 22px 18px}
 .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 .f{margin-bottom:12px}
 .f label{display:block;font-size:13.5px;font-weight:500;margin-bottom:5px}
 .req{color:var(--red)}
-.inp{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.inp{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
 .inp:focus{outline:none;border-color:var(--w700);box-shadow:0 0 0 3px var(--w100)}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .rp{display:grid;grid-template-columns:118px 1fr;gap:8px}
 .note{background:var(--w50);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--w800)}
 .note.lock{background:#fef2f2;border-color:#f3c9cd;color:#8f1220}
+.note.warn{background:#fffbeb;border-color:#fde68a;color:#1a1a1a}
+.note.warn{background:#fffbeb;border-color:#fde68a;color:#1a1a1a}
 .hist{max-height:130px;overflow:auto;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
 .chk{display:flex;flex-wrap:wrap;gap:8px}
-.chk label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;background:#fff;font-size:14px}
+.chk label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;background:var(--surface);font-size:14px}
 .chk label:has(input:checked){border-color:var(--w700);background:var(--w100)}
 @media(max-width:760px){.r2{grid-template-columns:1fr}.cell{min-height:74px;padding:4px}.ev{font-size:9px;padding:1px 4px}.num{width:24px;height:24px;font-size:13px}.cnt{display:none}.cal-title{font-size:18px;min-width:150px}.hd h1{font-size:14px}.hd p{display:none}}
 </style>
@@ -121,6 +143,7 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
   <div><h1>ระบบจองยูนิตปฏิบัติงานคลินิก</h1>
     <p>สำนักวิชาทันตแพทยศาสตร์ มหาวิทยาลัยเทคโนโลยีสุรนารี</p></div>
   <div class="spacer"></div>
+  <button class="btn line" id="btnTheme" type="button" title="สลับโหมดสี">🌙</button>
   <button class="btn line" id="btnAdmin" type="button">เข้าสู่ระบบผู้ดูแล</button>
 </div></header>
 
@@ -191,17 +214,23 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
     <div id="bkForm" style="margin-top:14px">
       <div class="r2">
         <div class="f"><label>ชั้นปี <span class="req">*</span></label>
-          <select id="fGrade" class="inp"><option value="">— เลือก —</option><option>5</option><option>6</option></select></div>
+          <select id="fGrade" class="inp"><option value="">— เลือก —</option><option>4</option><option>5</option><option>6</option></select></div>
         <div class="f"><label>ฐานฝึก <span class="req">*</span></label><select id="fBase" class="inp"></select></div>
       </div>
       <div class="f"><label>ชื่อ-นามสกุลนักศึกษา <span class="req">*</span></label>
         <div class="rp"><input class="inp" value="นศ.ทพ." disabled><input id="fSName" class="inp" placeholder="เช่น สมชาย ใจดี"></div></div>
       <hr style="border:none;border-top:1px dashed var(--line);margin:16px 0">
-      <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint">(หากเว้นว่าง → รอยืนยัน)</span></label>
+      <div class="f" id="fEmergWrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="fEmerg" style="width:17px;height:17px">
+          Emergency case (ไม่ต้องระบุชื่อผู้ป่วย/HN — ยืนยันสถานะจองแล้วได้ทันที)
+        </label>
+      </div>
+      <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint" id="fPNameHint">(หากเว้นว่าง → รอยืนยัน)</span></label>
         <div class="rp"><select id="fPPfx" class="inp"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กหญิง</option><option>เด็กชาย</option></select>
         <input id="fPName" class="inp" placeholder="ชื่อ-นามสกุลผู้ป่วย"></div></div>
       <div class="r2">
-        <div class="f"><label>HN <span class="hint">(ตัวเลข, หากเว้นว่าง → รอยืนยัน)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
+        <div class="f"><label>HN <span class="hint" id="fHNHint">(ตัวเลข, หากเว้นว่าง → รอยืนยัน)</span></label><input id="fHN" class="inp" inputmode="numeric"></div>
         <div class="f"><label>สิทธิการรักษา <span class="req">*</span></label><select id="fRight" class="inp"></select></div>
       </div>
       <div class="f"><label>รายละเอียดงานที่ทำ <span class="req">*</span></label><input id="fWork" class="inp" placeholder="เช่น สอบ Class V filling"></div>
@@ -284,6 +313,7 @@ var SESS={am:"ภาคเช้า (09:00–12:00)",pm:"ภาคบ่าย (
 
 /* ---- กติกาการจอง: ข้อความแนะนำ + เงื่อนไขพิเศษของคลินิก Pedo ---- */
 var PEDO_ID="pedo";
+var EMERG_CLINICS=["os_sr","os_ext","endo","oper"];
 var EXAM9_HINT="กรณีขอสอบภาคปฏิบัติ 9 งาน นักศึกษาจำเป็นต้องแจ้งให้อาจารย์ผู้ควบคุมคลินิกในวันนั้น ๆ ทราบอย่างน้อย 1 สัปดาห์ จึงจะมีสิทธิ์ลงสอบในคาบนั้น ๆ ได้ และในแต่ละคาบ ไม่สามารถขอสอบได้เกิน 2 ยูนิต";
 var PEDO_HINT_LIST=[
   "นักศึกษาสามารถทำ Charting ได้ไม่เกิน 2 ยูนิต ต่อคาบปฏิบัติงาน",
@@ -329,11 +359,11 @@ function sDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){}}
    ========================================================================== */
 function bxRow(r){ /* แปลงแถวจากฐานข้อมูล -> object ที่หน้าเว็บใช้ */
   return {grade:r.grade,base:r.base,sName:r.s_name,pPfx:r.p_pfx,pName:r.p_name,hn:r.hn,
-    right:r.patient_right,work:r.work,assist:r.assist,note:r.note,createdAt:r.created_at,updatedAt:r.updated_at,log:r.log||[]};
+    right:r.patient_right,work:r.work,assist:r.assist,emergency:r.emergency||false,note:r.note,createdAt:r.created_at,updatedAt:r.updated_at,log:r.log||[]};
 }
 function bxOut(d){ /* แปลง object ของหน้าเว็บ -> แถวสำหรับบันทึกลงฐานข้อมูล */
   return {grade:d.grade,base:d.base,s_name:d.sName,p_pfx:d.pPfx,p_name:d.pName,hn:d.hn,
-    patient_right:d.right,work:d.work,assist:d.assist,note:d.note,created_at:d.createdAt,updated_at:d.updatedAt,log:d.log||[]};
+    patient_right:d.right,work:d.work,assist:d.assist,emergency:!!d.emergency,note:d.note,created_at:d.createdAt,updated_at:d.updatedAt,log:d.log||[]};
 }
 
 async function cloudLoadClinics(){
@@ -345,12 +375,18 @@ async function cloudLoadClinics(){
 }
 async function cloudSaveClinics(){
   if(!sb) return;
-  var delRes=await sb.from("clinics").delete().neq("id","");
-  if(delRes.error){showErr(delRes.error);return;}
+  var existing=await sb.from("clinics").select("id");
+  if(existing.error){showErr(existing.error);return;}
+  var keepIds=CLINICS.map(function(c){return c.id;});
+  var toDelete=(existing.data||[]).map(function(r){return r.id;}).filter(function(id){return keepIds.indexOf(id)===-1;});
+  if(toDelete.length){
+    var delRes=await sb.from("clinics").delete().in("id",toDelete);
+    if(delRes.error){showErr(delRes.error);return;}
+  }
   if(!CLINICS.length) return;
   var rows=CLINICS.map(function(c,i){return {id:c.id,name:c.name,units:c.units,sort_order:i};});
-  var insRes=await sb.from("clinics").insert(rows);
-  if(insRes.error) showErr(insRes.error);
+  var upRes=await sb.from("clinics").upsert(rows);
+  if(upRes.error) showErr(upRes.error);
 }
 async function cloudLoadTeachers(){
   if(!sb) return;
@@ -361,28 +397,35 @@ async function cloudLoadTeachers(){
 }
 async function cloudSaveTeachers(){
   if(!sb) return;
-  var delRes=await sb.from("teachers").delete().neq("id","");
-  if(delRes.error){showErr(delRes.error);return;}
+  var existing=await sb.from("teachers").select("id");
+  if(existing.error){showErr(existing.error);return;}
+  var keepIds=TEACHERS.map(function(t){return t.id;});
+  var toDelete=(existing.data||[]).map(function(r){return r.id;}).filter(function(id){return keepIds.indexOf(id)===-1;});
+  if(toDelete.length){
+    var delRes=await sb.from("teachers").delete().in("id",toDelete);
+    if(delRes.error){showErr(delRes.error);return;}
+  }
   if(!TEACHERS.length) return;
   var rows=TEACHERS.map(function(t,i){return {id:t.id,name:t.name,sort_order:i};});
-  var insRes=await sb.from("teachers").insert(rows);
-  if(insRes.error) showErr(insRes.error);
+  var upRes=await sb.from("teachers").upsert(rows);
+  if(upRes.error) showErr(upRes.error);
 }
-async function writeTeacherDuty(k,s,clinicId,teacherId){
+async function writeClinicDuty(k,s,clinicId,teacherId,baseName){
   if(sb){
-    if(teacherId){
-      var res=await sb.from("teacher_duty").upsert({date:k,session:s,clinic_id:clinicId,teacher_id:teacherId});
+    if(teacherId||baseName){
+      var res=await sb.from("teacher_duty").upsert({date:k,session:s,clinic_id:clinicId,teacher_id:teacherId||null,base_name:baseName||null});
       if(res.error){showErr(res.error);return false;}
     } else {
       var res2=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s).eq("clinic_id",clinicId);
       if(res2.error){showErr(res2.error);return false;}
     }
   }
-  TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=TDUTY[k][s]||{}; TDUTY[k][s][clinicId]=teacherId||"";
+  TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=TDUTY[k][s]||{}; TDUTY[k][s][clinicId]={teacher:teacherId||"",base:baseName||""};
   return true;
 }
 function teacherName(id){for(var i=0;i<TEACHERS.length;i++)if(TEACHERS[i].id===id)return TEACHERS[i].name;return "";}
-function dutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId])||"";}
+function dutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId]&&TDUTY[k][s][clinicId].teacher)||"";}
+function baseDutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId]&&TDUTY[k][s][clinicId].base)||"";}
 
 /* โหลดตาราง+การจอง+อาจารย์เวรเฉพาะ "ช่วงวันที่" ที่ต้องใช้ (คืนค่าเป็น object ใหม่ ไม่ยุ่งกับตัวแปร global) */
 async function fetchRange(startK,endK){
@@ -391,7 +434,7 @@ async function fetchRange(startK,endK){
   if(schedRes.error) throw schedRes.error;
   var bookRes=await sb.from("bookings").select("*").gte("date",startK).lte("date",endK);
   if(bookRes.error) throw bookRes.error;
-  var dutyRes=await sb.from("teacher_duty").select("date,session,clinic_id,teacher_id").gte("date",startK).lte("date",endK);
+  var dutyRes=await sb.from("teacher_duty").select("date,session,clinic_id,teacher_id,base_name").gte("date",startK).lte("date",endK);
   if(dutyRes.error) throw dutyRes.error;
   var sc={};
   (schedRes.data||[]).forEach(function(r){
@@ -404,7 +447,8 @@ async function fetchRange(startK,endK){
   });
   var td={};
   (dutyRes.data||[]).forEach(function(r){
-    td[r.date]=td[r.date]||{}; td[r.date][r.session]=td[r.date][r.session]||{}; td[r.date][r.session][r.clinic_id]=r.teacher_id;
+    td[r.date]=td[r.date]||{}; td[r.date][r.session]=td[r.date][r.session]||{};
+    td[r.date][r.session][r.clinic_id]={teacher:r.teacher_id||"",base:r.base_name||""};
   });
   return {sched:sc,book:bk,tduty:td};
 }
@@ -466,6 +510,19 @@ var BOOK={};
 var TDUTY={};   /* แคชอาจารย์เวรของ "ช่วงเดือนที่กำลังแสดง" */
 var isAdmin=sGet("ohc_admin",false)===true;
 
+/* ---- Dark mode: บันทึกเป็นค่าตั้งค่าเฉพาะเครื่อง (ไม่ sync ข้ามอุปกรณ์) ---- */
+var curTheme=sGet("ohc_theme","light");
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme",curTheme);
+  var b=$("btnTheme"); if(b) b.textContent=curTheme==="dark"?"☀️":"🌙";
+}
+function toggleTheme(){
+  curTheme=(curTheme==="dark"?"light":"dark");
+  sSet("ohc_theme",curTheme);
+  applyTheme();
+}
+applyTheme();
+
 /* ================= HELPERS ================= */
 function $(id){return document.getElementById(id);}
 function pad(n){return String(n).padStart(2,"0");}
@@ -484,7 +541,7 @@ function deadlineOf(k){var d=parseK(k);d.setDate(d.getDate()-1);
 function isLocked(k){return new Date()>deadlineOf(k);}
 function canEdit(k){return isAdmin||!isLocked(k);}
 function bkey(k,s,c,u){return k+"|"+s+"|"+c+"|"+u;}
-function statusOf(b){return !b?"free":((b.pName&&b.hn)?"book":"pend");}
+function statusOf(b){return !b?"free":((b.emergency||(b.pName&&b.hn))?"book":"pend");}
 function sched(k){var x=SCHED[k]||{};return {am:x.am||[],pm:x.pm||[]};}
 function firstWeekday(d){var x=new Date(d.getTime());while(isWknd(x))x.setDate(x.getDate()+1);return x;}
 
@@ -549,14 +606,17 @@ function renderDay(){
     t.onclick=function(){curSess=t.getAttribute("data-s");curClinic=null;renderDay();};});
 
   if(isAdmin){
-    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' และอาจารย์ผู้ควบคุมของแต่ละคลินิก (แต่ละคลินิกเลือกอาจารย์ได้อิสระ ไม่จำเป็นต้องเป็นคนเดียวกัน)'
+    $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' อาจารย์ผู้ควบคุม และฐานฝึกของแต่ละคลินิก (แต่ละคลินิกเลือกได้อิสระ ไม่จำเป็นต้องเป็นแบบเดียวกัน)'
       +'<div class="chk" id="schedChk" style="margin:10px 0">'
       +(CLINICS.length?CLINICS.map(function(c){
         return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)">'
           +'<label style="flex:1;min-width:200px"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
           +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+')</span></label>'
-          +'<select class="inp dutySel" data-cid="'+c.id+'" style="max-width:220px"><option value="">— อาจารย์ผู้ควบคุม —</option>'
+          +'<select class="inp dutySel" data-cid="'+c.id+'" style="max-width:200px"><option value="">— อาจารย์ผู้ควบคุม —</option>'
           +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
+          +'</select>'
+          +'<select class="inp baseSel" data-cid="'+c.id+'" style="max-width:160px"><option value="">— ฐานฝึก —</option>'
+          +BASES.map(function(bn){return '<option value="'+esc(bn)+'"'+(baseDutyOf(k,curSess,c.id)===bn?" selected":"")+'>'+esc(bn)+"</option>";}).join("")
           +'</select></div>';
       }).join("")
         :'<span class="hint">ยังไม่มีรายวิชา — กด "จัดการรายวิชา / ยูนิต" เพื่อเพิ่ม</span>')
@@ -568,9 +628,9 @@ function renderDay(){
 
   var list=sc[curSess];
   $("chips").innerHTML=list.length
-    ? '<div class="chips">'+list.map(function(id){var c=clinic(id),tn=teacherName(dutyOf(k,curSess,id));
+    ? '<div class="chips">'+list.map(function(id){var c=clinic(id),tn=teacherName(dutyOf(k,curSess,id)),bn=baseDutyOf(k,curSess,id);
         return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+c.units.length+" ยูนิต</small>"
-          +(tn?'<br><small style="opacity:.75">'+esc(tn)+"</small>":"")+"</div>";}).join("")+"</div>"
+          +(tn||bn?'<br><small style="opacity:.75">'+[tn,bn].filter(Boolean).map(esc).join(" · ")+"</small>":"")+"</div>";}).join("")+"</div>"
     : '<div class="empty">ยังไม่มีคลินิกใน'+SESS[curSess]+"ของวันนี้"+(isAdmin?'<br><span class="hint">เลือกรายวิชาจากกล่องด้านบนแล้วกดบันทึก</span>':"")+"</div>";
   Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
     el.onclick=function(){var id=el.getAttribute("data-c");curClinic=(curClinic===id?null:id);renderDay();};});
@@ -580,15 +640,16 @@ function renderDay(){
 function renderUnits(){
   var el=$("units");
   if(!curClinic){el.innerHTML="";return;}
-  var c=clinic(curClinic),tn=teacherName(dutyOf(curKey,curSess,curClinic));
+  var c=clinic(curClinic),tn=teacherName(dutyOf(curKey,curSess,curClinic)),bn=baseDutyOf(curKey,curSess,curClinic);
   var map={free:["u-free","ว่าง"],pend:["u-pend","รอยืนยัน"],book:["u-book","จองแล้ว"]};
   el.innerHTML='<div style="margin-top:16px"><b style="color:var(--w800)">'+esc(c.name)+"</b> — คลิกเลือกยูนิตเพื่อจอง"
-   +(tn?' <span style="color:var(--muted)">· อาจารย์ผู้ควบคุม: <b>'+esc(tn)+"</b></span>":(isAdmin?' <span class="hint">(ยังไม่ระบุอาจารย์ผู้ควบคุม)</span>':""))+"</div>"
+   +(tn?' <span style="color:var(--muted)">· อาจารย์ผู้ควบคุม: <b>'+esc(tn)+"</b></span>":(isAdmin?' <span class="hint">(ยังไม่ระบุอาจารย์ผู้ควบคุม)</span>':""))
+   +(bn?' <span style="color:var(--muted)">· ฐานฝึก: <b>'+esc(bn)+"</b></span>":"")+"</div>"
    +'<div class="units">'+c.units.map(function(u){
       var b=BOOK[bkey(curKey,curSess,curClinic,u)],st=statusOf(b);
       return '<div class="unit '+map[st][0]+'" data-u="'+u+'"><div class="no">'+u+"</div>"
         +'<div class="st"><span class="dot"></span>'+map[st][1]+"</div>"
-        +'<div class="who">'+(b?"นศ.ทพ."+esc(b.sName):"คลิกเพื่อจอง")+"</div></div>";}).join("")+"</div>"
+        +'<div class="who">'+(b?"นศ.ทพ."+esc(b.sName)+(b.emergency?" · 🚨 Emergency":""):"คลิกเพื่อจอง")+"</div></div>";}).join("")+"</div>"
    +'<div class="legend">'
    +'<span><span class="dot" style="background:var(--green);outline:2px solid var(--green);outline-offset:2px"></span> ว่าง</span>'
    +'<span><span class="dot" style="background:var(--yellow);outline:2px solid var(--yellow);outline-offset:2px"></span> รอยืนยัน</span>'
@@ -612,7 +673,7 @@ function renderSum(){
      +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
      +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
        return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
-        +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+"</td><td>"+(b.hn?esc(b.hn):"—")+"</td><td>"+esc(b.right)+"</td>"
+        +"<td>"+(b.emergency?'<span style="color:var(--red);font-weight:600">🚨 Emergency case</span>':(b.pName?esc(b.pPfx+" "+b.pName):"—"))+"</td><td>"+(b.emergency?"—":(b.hn?esc(b.hn):"—"))+"</td><td>"+esc(b.right)+"</td>"
         +"<td>"+esc(b.work)+"</td><td>"+(esc(b.assist)||"-")+"</td><td>"+(esc(b.note)||"-")+"</td>"
         +'<td><span class="badge '+(ok?"b-ok":"b-wait")+'">'+(ok?"จองแล้ว":"รอยืนยัน")+"</span></td>"
         +'<td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">'+stamp(b.updatedAt)+"<br>จองเมื่อ "+stamp(b.createdAt)+"</td></tr>";}).join("")
@@ -630,6 +691,14 @@ function renderWorkHint(cid){
     $("workHint").innerHTML="";
   }
 }
+function updateEmergUI(){
+  var on=$("fEmerg").checked, ed=canEdit(curKey);
+  $("fPName").disabled=on||!ed;
+  $("fHN").disabled=on||!ed;
+  if(on){$("fPName").value="";$("fHN").value="";}
+  $("fPNameHint").textContent=on?"(Emergency case — ไม่ต้องกรอก)":"(หากเว้นว่าง → รอยืนยัน)";
+  $("fHNHint").textContent=on?"(Emergency case — ไม่ต้องกรอก)":"(ตัวเลข, หากเว้นว่าง → รอยืนยัน)";
+}
 function updatePedoLive(){
   if(!editK||editK.c!==PEDO_ID){$("fAssistWrap").style.display="none";$("pedoCountInfo").innerHTML="";return;}
   var cat=pedoCat($("fWork").value);
@@ -645,26 +714,32 @@ async function openBook(cid,u){
   editK={k:curKey,s:curSess,c:cid,u:u};
   var b=BOOK[bkey(curKey,curSess,cid,u)];
   $("bkTitle").textContent="ยูนิต "+u+" · "+clinic(cid).name;
-  var dutyTn=teacherName(dutyOf(curKey,curSess,cid));
-  $("bkSub").textContent=thDate(curKey)+" · "+SESS[curSess]+(dutyTn?" · อาจารย์ผู้ควบคุม: "+dutyTn:"");
+  var dutyTn=teacherName(dutyOf(curKey,curSess,cid)),dutyBn=baseDutyOf(curKey,curSess,cid);
+  $("bkSub").textContent=thDate(curKey)+" · "+SESS[curSess]+(dutyTn?" · อาจารย์ผู้ควบคุม: "+dutyTn:"")+(dutyBn?" · ฐานฝึก: "+dutyBn:"");
   $("fBase").innerHTML='<option value="">— เลือก —</option>'+BASES.map(function(x){return "<option>"+x+"</option>";}).join("");
   $("fRight").innerHTML='<option value="">— เลือก —</option>'+RIGHTS.map(function(x){return "<option>"+x+"</option>";}).join("");
   function V(id,v){$(id).value=v==null?"":v;}
   V("fGrade",b&&b.grade);V("fBase",b&&b.base);V("fSName",b&&b.sName);V("fPPfx",(b&&b.pPfx)||"นาย");
   V("fPName",b&&b.pName);V("fHN",b&&b.hn);V("fRight",b&&b.right);V("fWork",b&&b.work);V("fNote",b&&b.note);
   V("fAssist",b&&b.assist);
+  var canEmerg=EMERG_CLINICS.indexOf(cid)>-1;
+  $("fEmergWrap").style.display=canEmerg?"":"none";
+  $("fEmerg").checked=!!(b&&b.emergency);
+  $("fEmerg").onchange=updateEmergUI;
   renderWorkHint(cid);
   $("fWork").oninput=updatePedoLive;
   updatePedoLive();
   var ed=canEdit(curKey);
   Array.prototype.forEach.call(document.querySelectorAll("#bkForm .inp"),function(i){i.disabled=!ed;});
+  $("fEmerg").disabled=!ed;
+  updateEmergUI();
   $("bkSave").style.display=ed?"":"none";
   $("bkDel").style.display=(b&&ed)?"":"none";
   $("bkLock").innerHTML=(ed
     ?'<div class="note">⏳ จอง/แก้ไขได้ถึง <b>'+dlText(deadlineOf(curKey))+'</b><br><span style="font-size:12.5px">(15:00 ของวันทำการก่อนหน้า — คลินิกวันจันทร์ปิดรับตั้งแต่ศุกร์ 15:00)</span></div>'
     :'<div class="note lock">🔒 ปิดรับการจอง/แก้ไขแล้ว — เลยกำหนด '+dlText(deadlineOf(curKey))+"</div>")
     +'<div class="note lock" style="margin-top:8px">รายละเอียดคลินิกที่เปิดในสัปดาห์ถัดไปจะอัปเดตทุกวันพฤหัสบดีก่อนหน้า <b>กรณีนักศึกษาปี 5/6 เรียนไม่ตรงตามแผน สามารถจองยูนิตได้หลังเวลา 20:00 น. ของวันพฤหัสบดีก่อนหน้าเท่านั้น กรณีที่มีการแย่งจองยูนิตนักศึกษาที่เรียนตามแผน จะถือว่าการจองนั้นเป็นโมฆะทุกกรณี</b></div>'
-    +'<div class="note lock" style="margin-top:8px">กรณีการจองยูนิตอยู่ในสถานะ "รอยืนยัน" นักศึกษาจำเป็นต้องเข้ามากรอกข้อมูลให้ครบถ้วนภายในเวลา 14:00 น. ของวันก่อนหน้า หากเกินระยะเวลาค่าที่กรอกไว้จะถูกล้างโดยระบบ</div>';
+    +'<div class="note warn" style="margin-top:8px">กรณีการจองยูนิตอยู่ในสถานะ "รอยืนยัน" นักศึกษาจำเป็นต้องเข้ามากรอกข้อมูลให้ครบถ้วนภายในเวลา 14:00 น. ของวันก่อนหน้า หากเกินระยะเวลาค่าที่กรอกไว้จะถูกล้างโดยระบบ</div>';
   $("bkHist").innerHTML=(b&&b.log&&b.log.length)
     ?'<div class="hist"><b>ประวัติการบันทึก</b><br>'+b.log.slice().reverse().map(function(l){return "• "+stamp(l.at)+" — "+esc(l.act);}).join("<br>")+"</div>":"";
   openM("mBook");
@@ -689,8 +764,10 @@ async function saveBooking(){
   var k=editK.k,s=editK.s,c=editK.c,u=editK.u;
   if(!canEdit(k)){alert("ปิดรับการจองแล้ว ไม่สามารถบันทึกได้");return;}
   function g(id){return $(id).value.trim();}
-  var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:g("fPPfx"),pName:g("fPName"),
-    hn:g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),assist:g("fAssist"),note:g("fNote")};
+  var isEmerg=EMERG_CLINICS.indexOf(c)>-1 && $("fEmerg").checked;
+  var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:g("fPPfx"),pName:isEmerg?"":g("fPName"),
+    hn:isEmerg?"":g("fHN").replace(/\D/g,""),right:g("fRight"),work:g("fWork"),assist:g("fAssist"),
+    emergency:isEmerg,note:g("fNote")};
   if(!d.grade||!d.base||!d.sName||!d.right||!d.work){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
   if(c===PEDO_ID){
     var cat=pedoCat(d.work);
@@ -741,7 +818,7 @@ async function saveBooking(){
     }
   }
   BOOK[bk]=d; closeM("mBook"); renderCal(); renderDay();
-  alert((statusOf(d)==="book"?"✅ จองสำเร็จ — สถานะ: จองแล้ว":"⚠️ บันทึกแล้ว — สถานะ: รอยืนยัน (ยังไม่ระบุชื่อผู้ป่วย/HN)")
+  alert((d.emergency?"✅ จองสำเร็จ — สถานะ: จองแล้ว (Emergency case)":statusOf(d)==="book"?"✅ จองสำเร็จ — สถานะ: จองแล้ว":"⚠️ บันทึกแล้ว — สถานะ: รอยืนยัน (ยังไม่ระบุชื่อผู้ป่วย/HN)")
     +"\nยูนิต "+u+" · "+clinic(c).name+"\nบันทึกเมื่อ "+stamp(nowI));
 }
 async function deleteBooking(){
@@ -791,7 +868,8 @@ async function saveSchedule(){
   var dutySels=document.querySelectorAll("#schedChk .dutySel");
   for(var i=0;i<dutySels.length;i++){
     var sel=dutySels[i],cid=sel.getAttribute("data-cid");
-    var okT=await writeTeacherDuty(curKey,curSess,cid,sel.value);
+    var baseSel=document.querySelector('#schedChk .baseSel[data-cid="'+cid+'"]');
+    var okT=await writeClinicDuty(curKey,curSess,cid,sel.value,baseSel?baseSel.value:"");
     if(!okT)return;
   }
   renderCal();renderDay();alert("บันทึกตารางคลินิกเรียบร้อย");
@@ -806,8 +884,8 @@ async function copyPrev(){
   var ok=await writeScheduleDay(curKey,curSess,ids);
   if(!ok)return;
   for(var i=0;i<ids.length;i++){
-    var cid=ids[i],tid=dutyOf(pk,curSess,cid);
-    if(tid){ var okT=await writeTeacherDuty(curKey,curSess,cid,tid); if(!okT)return; }
+    var cid=ids[i],tid=dutyOf(pk,curSess,cid),bn=baseDutyOf(pk,curSess,cid);
+    if(tid||bn){ var okT=await writeClinicDuty(curKey,curSess,cid,tid,bn); if(!okT)return; }
   }
   renderCal();renderDay();
 }
@@ -918,7 +996,7 @@ async function collect(){
 }
 var HEAD=["ลำดับ","วันที่","ช่วงเวลา","คลินิก","ยูนิต","ชั้นปี","ชื่อ-นามสกุลนักศึกษา","ฐานฝึก","ชื่อ-นามสกุลผู้ป่วย","HN","สิทธิการรักษา","รายละเอียดงานที่ทำ","Assistant","หมายเหตุ","สถานะ","บันทึกล่าสุด","ลงชื่อ"];
 function toRow(r,i){var b=r.b;return [i+1,thShort(r.k),r.s==="am"?"เช้า":"บ่าย",clinic(r.cid).name,r.u,b.grade,
- "นศ.ทพ."+b.sName,b.base,b.pName?(b.pPfx+" "+b.pName):"-",b.hn||"-",b.right,b.work,b.assist||"-",b.note||"-",
+ "นศ.ทพ."+b.sName,b.base,b.emergency?"Emergency case":(b.pName?(b.pPfx+" "+b.pName):"-"),b.emergency?"-":(b.hn||"-"),b.right,b.work,b.assist||"-",b.note||"-",
  statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน",stamp(b.updatedAt),""];}
 function dlFile(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href);},1000);}
@@ -944,7 +1022,7 @@ async function exportPDF(){
      +'<th style="width:14%">ลงชื่อ</th></tr></thead><tbody>'
      +rs.map(function(r){var b=r.b;return '<tr><td class="c"><b>'+r.u+'</b></td><td class="c">'+esc(b.grade)+"</td>"
        +"<td>นศ.ทพ."+esc(b.sName)+'<br><span class="s">ฐานฝึก: '+esc(b.base)+"</span></td>"
-       +"<td>"+(b.pName?esc(b.pPfx+" "+b.pName):"—")+'<br><span class="s">HN: '+esc(b.hn||"—")+" · "+(statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน")+"</span></td>"
+       +"<td>"+(b.emergency?"<b>🚨 Emergency case</b>":(b.pName?esc(b.pPfx+" "+b.pName):"—"))+'<br><span class="s">'+(b.emergency?"":"HN: "+esc(b.hn||"—")+" · ")+(statusOf(b)==="book"?"จองแล้ว":"รอยืนยัน")+"</span></td>"
        +"<td>"+esc(b.right)+"</td><td>"+esc(b.work)+(b.assist?'<br><span class="s">Assistant: '+esc(b.assist)+"</span>":"")+'<br><span class="s">'+(esc(b.note)||"-")+"<br>บันทึก: "+stamp(b.updatedAt)+"</span></td>"
        +'<td class="sign"></td></tr>';}).join("")+"</tbody></table></div>";}).join("");
   var w=window.open("","_blank");
@@ -985,6 +1063,7 @@ try{
   $("nextM").onclick=async function(){VM++;if(VM>11){VM=0;VY++;}
     if(sb){try{await loadCalendarWindow();}catch(e){showErr(e);}} renderCal();};
   $("btnToday").onclick=function(){var n=firstWeekday(new Date());selectDay(key(n));};
+  $("btnTheme").onclick=toggleTheme;
   $("btnAdmin").onclick=function(){
     if(isAdmin){ doLogout(); }
     else{$("lgU").value="";$("lgP").value="";$("lgErr").textContent="";openM("mLogin");setTimeout(function(){$("lgU").focus();},80);}};
