@@ -160,6 +160,13 @@ html[data-theme="dark"] .flu-book{background:#3a1c22}
 .note.warn{background:#fffbeb;border-color:#fde68a;color:#1a1a1a}
 .hist{max-height:130px;overflow:auto;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
 .chk{display:flex;flex-wrap:wrap;gap:8px}
+.schedGrid{display:flex;flex-direction:column}
+.schedRow{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+.schedRow:last-child{border-bottom:none}
+.schedName{display:flex;align-items:center;gap:8px;min-width:0}
+.schedUnits{color:var(--muted);font-size:12.5px}
+.schedRow select{width:100%}
+@media(max-width:640px){.schedRow{grid-template-columns:1fr}}
 .chk label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;background:var(--surface);font-size:14px}
 .chk label:has(input:checked){border-color:var(--w700);background:var(--w100)}
 @media(max-width:760px){.r2{grid-template-columns:1fr}.cell{min-height:74px;padding:4px}.ev{font-size:9px;padding:1px 4px}.num{width:24px;height:24px;font-size:13px}.cnt{display:none}.cal-title{font-size:18px;min-width:150px}.hd h1{font-size:14px}.hd p{display:none}.flrow{grid-template-columns:1fr}.flrow+.flrow{border-top:none}.flside+.flside{border-top:1px dashed var(--line);padding-top:8px;margin-top:2px}}
@@ -469,12 +476,11 @@ async function cloudSaveTeachers(){
 }
 async function writeClinicDuty(k,s,clinicId,teacherId,baseName){
   if(sb){
+    var delRes=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s).eq("clinic_id",clinicId);
+    if(delRes.error){showErr(delRes.error);return false;}
     if(teacherId||baseName){
-      var res=await sb.from("teacher_duty").upsert({date:k,session:s,clinic_id:clinicId,teacher_id:teacherId||null,base_name:baseName||null});
-      if(res.error){showErr(res.error);return false;}
-    } else {
-      var res2=await sb.from("teacher_duty").delete().eq("date",k).eq("session",s).eq("clinic_id",clinicId);
-      if(res2.error){showErr(res2.error);return false;}
+      var insRes=await sb.from("teacher_duty").insert({date:k,session:s,clinic_id:clinicId,teacher_id:teacherId||null,base_name:baseName||null});
+      if(insRes.error){showErr(insRes.error);return false;}
     }
   }
   TDUTY[k]=TDUTY[k]||{}; TDUTY[k][s]=TDUTY[k][s]||{}; TDUTY[k][s][clinicId]={teacher:teacherId||"",base:baseName||""};
@@ -664,15 +670,15 @@ function renderDay(){
 
   if(isAdmin){
     $("adminSched").innerHTML='<div class="note" style="margin-bottom:14px"><b>ผู้ดูแล:</b> เลือกรายวิชาที่เปิดคลินิกใน'+SESS[curSess]+' อาจารย์ผู้ควบคุม และฐานฝึกของแต่ละคลินิก (แต่ละคลินิกเลือกได้อิสระ ไม่จำเป็นต้องเป็นแบบเดียวกัน)'
-      +'<div class="chk" id="schedChk" style="margin:10px 0">'
+      +'<div class="schedGrid" id="schedChk" style="margin:10px 0">'
       +(CLINICS.length?CLINICS.map(function(c){
-        return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)">'
-          +'<label style="flex:1;min-width:200px"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
-          +' <span style="color:var(--muted);font-size:12.5px">('+c.units.join(", ")+')</span></label>'
-          +'<select class="inp dutySel" data-cid="'+c.id+'" style="max-width:200px"><option value="">— อาจารย์ผู้ควบคุม —</option>'
+        return '<div class="schedRow">'
+          +'<label class="schedName"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
+          +' <span class="schedUnits">('+c.units.join(", ")+')</span></label>'
+          +'<select class="inp dutySel" data-cid="'+c.id+'"><option value="">— อาจารย์ผู้ควบคุม —</option>'
           +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
           +'</select>'
-          +'<select class="inp baseSel" data-cid="'+c.id+'" style="max-width:160px"><option value="">— ฐานฝึก —</option>'
+          +'<select class="inp baseSel" data-cid="'+c.id+'"><option value="">— ฐานฝึก —</option>'
           +BASES.map(function(bn){return '<option value="'+esc(bn)+'"'+(baseDutyOf(k,curSess,c.id)===bn?" selected":"")+'>'+esc(bn)+"</option>";}).join("")
           +'</select></div>';
       }).join("")
