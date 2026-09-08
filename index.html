@@ -857,7 +857,7 @@ function renderSum(){
      +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
      +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
        return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
-        +"<td>"+(b.emergency?'<span style="color:var(--red);font-weight:600">🚨 Emergency case</span>':(b.pName?esc(b.pPfx+" "+b.pName):"—"))+"</td><td>"+(b.emergency?"—":(b.hn?esc(b.hn):"—"))+"</td><td>"+esc(b.right)+"</td>"
+        +"<td>"+(b.emergency?'<span style="color:var(--red);font-weight:600">Emergency case</span>':(b.pName?esc(b.pPfx+" "+b.pName):"—"))+"</td><td>"+(b.emergency?"—":(b.hn?esc(b.hn):"—"))+"</td><td>"+esc(b.right)+"</td>"
         +"<td>"+esc(b.work)+"</td><td>"+(esc(b.assist)||"-")+"</td><td>"+(esc(b.note)||"-")+"</td>"
         +'<td><span class="badge '+(ok?"b-ok":"b-wait")+'">'+(ok?"จองแล้ว":"รอยืนยัน")+"</span></td>"
         +'<td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">'+stamp(b.updatedAt)+"<br>จองเมื่อ "+stamp(b.createdAt)+"</td></tr>";}).join("")
