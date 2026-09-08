@@ -103,6 +103,7 @@ header{background:linear-gradient(100deg,#2f0718,#761a45);position:sticky;top:0;
 .u-pend{border-color:var(--yellow);background:#fffdf3}.u-pend .dot{background:var(--yellow)}
 .u-book{border-color:var(--red);background:#fff7f8}.u-book .dot{background:var(--green)}
 .unit .who{font-size:12.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit .borrowTag{font-size:12.5px;font-style:italic;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
@@ -264,8 +265,8 @@ html[data-theme="dark"] .flu-book{background:#3a1c22}
         <div class="f"><label>ฐานฝึก <span class="req">*</span></label><select id="fBase" class="inp"></select></div>
       </div>
       <div class="f" id="fSubjectWrap" style="display:none">
-        <label>วิชา (ใช้ยูนิตนี้เป็นยูนิตเสริมของวิชาใด) <span class="req">*</span>
-          <span class="hint">ยูนิตนี้เป็นยูนิตสำรอง กรุณาเลือกวิชาที่เรียน</span></label>
+        <label>วิชา (ใช้ยูนิตนี้เป็นยูนิตเสริมของวิชาใด) <span class="req" id="fSubjectReq">*</span>
+          <span class="hint">หากยูนิตนี้เป็นยูนิตสำรอง กรุณาเลือกวิชาที่เรียน</span></label>
         <select id="fSubject" class="inp"></select></div>
       <div class="f"><label>ชื่อ-นามสกุลนักศึกษา <span class="req">*</span></label>
         <div class="rp"><input class="inp" value="นศ.ทพ." disabled><input id="fSName" class="inp" placeholder="เช่น สมชาย ใจดี"></div></div>
@@ -614,9 +615,10 @@ function dlText(d){return "วัน"+TH_D[d.getDay()]+"ที่ "+d.getDate()+
 function clinic(id){for(var i=0;i<CLINICS.length;i++)if(CLINICS[i].id===id)return CLINICS[i];return {id:id,name:id,units:[]};}
 function isReservedClinic(c){return !!(c&&/^reserved\b/i.test(String(c.name||"").trim()));}
 function reservedClinicsSched(k,s){return sched(k)[s].map(clinic).filter(isReservedClinic);}
-function borrowedUnitsFor(targetCid,k,s){ /* ยูนิต Reserved ที่ถูกยกให้วิชา targetCid ใช้เป็นฐานเสริมในคาบนี้ */
+function borrowedUnitsFor(targetCid,k,s){ /* ยูนิตของคลินิกใดๆ ในคาบนี้ ที่ถูกยกให้วิชา targetCid ใช้เป็นฐานเสริม (ทุกยูนิตเป็นยูนิตสำรองให้กันได้อิสระ) */
   var out=[];
-  reservedClinicsSched(k,s).forEach(function(rc){
+  sched(k)[s].map(clinic).forEach(function(rc){
+    if(rc.id===targetCid) return;
     rc.units.forEach(function(u){
       var b=BOOK[bkey(k,s,rc.id,u)];
       if(b&&b.subjectClinicId===targetCid) out.push({unit:u,sourceId:rc.id,sourceName:rc.name});
@@ -728,7 +730,7 @@ function renderDay(){
   var list=sc[curSess];
   $("chips").innerHTML=list.length
     ? '<div class="chips">'+list.map(function(id){var c=clinic(id),tn=teacherName(dutyOf(k,curSess,id)),bn=baseDutyOf(k,curSess,id);
-        var extra=isReservedClinic(c)?0:borrowedUnitsFor(id,k,curSess).length;
+        var extra=borrowedUnitsFor(id,k,curSess).length;
         return '<div class="chip'+(curClinic===id?" on":"")+'" data-c="'+id+'">'+esc(c.name)+" <small>"+(c.units.length+extra)+" ยูนิต"+(extra?" (+"+extra+" ยืม)":"")+"</small>"
           +(tn||bn?'<br><small style="opacity:.75">'+[tn,bn].filter(Boolean).map(esc).join(" · ")+"</small>":"")+"</div>";}).join("")+"</div>"
     : '<div class="empty">ยังไม่มีคลินิกใน'+SESS[curSess]+"ของวันนี้"+(isAdmin?'<br><span class="hint">เลือกรายวิชาจากกล่องด้านบนแล้วกดบันทึก</span>':"")+"</div>";
@@ -742,10 +744,11 @@ function renderUnits(){
   if(!curClinic){el.innerHTML="";return;}
   var c=clinic(curClinic),tn=teacherName(dutyOf(curKey,curSess,curClinic)),bn=baseDutyOf(curKey,curSess,curClinic);
   var map={free:["u-free","ว่าง"],pend:["u-pend","รอยืนยัน"],book:["u-book","จองแล้ว"]};
-  var borrowed=isReservedClinic(c)?[]:borrowedUnitsFor(curClinic,curKey,curSess);
+  var borrowed=borrowedUnitsFor(curClinic,curKey,curSess);
   function unitCard(u,cid,tag){
     var b=BOOK[bkey(curKey,curSess,cid,u)],st=statusOf(b);
-    return '<div class="unit '+map[st][0]+'" data-cid="'+cid+'" data-u="'+u+'"><div class="no">'+u+(tag?' <small style="font-weight:400;opacity:.7">'+tag+"</small>":"")+"</div>"
+    return '<div class="unit '+map[st][0]+'" data-cid="'+cid+'" data-u="'+u+'"><div class="no">'+u+"</div>"
+      +(tag?'<div class="borrowTag">'+tag+"</div>":"")
       +'<div class="st"><span class="dot"></span>'+map[st][1]+"</div>"
       +'<div class="who">'+(b?"นศ.ทพ."+esc(b.sName)+(b.emergency?" · 🚨 Emergency":""):"คลิกเพื่อจอง")+"</div></div>";
   }
@@ -783,8 +786,9 @@ function flSideHtml(c,fl,block,k,s){
   if(c){units=c.units;name=c.name;}
   else{units=[fl*100+block*10+1,fl*100+block*10+2,fl*100+block*10+3,fl*100+block*10+4];name="Reserved";}
   var boxes;
-  if(c&&isReservedClinic(c)){
-    boxes=units.map(function(u){
+  if(c){
+    /* ทุกคลินิก (รวมถึง Reserved) : ยูนิตของตัวเองที่ถูกยกให้เป็นฐานเสริมของวิชาอื่น ให้แสดงลูกศร "ยกให้" แทนสถานะปกติ */
+    var own=units.map(function(u){
       var b=BOOK[bkey(k,s,c.id,u)];
       if(b&&b.subjectClinicId){
         var tgt=clinic(b.subjectClinicId);
@@ -792,15 +796,15 @@ function flSideHtml(c,fl,block,k,s){
       }
       return fluBox(u,c,k,s);
     }).join("");
-  } else {
-    var own=units.map(function(u){return fluBox(u,c,k,s);}).join("");
-    var borrowed=c?borrowedUnitsFor(c.id,k,s).map(function(o){
+    var borrowed=borrowedUnitsFor(c.id,k,s).map(function(o){
       var bb=BOOK[bkey(k,s,o.sourceId,o.unit)],st=statusOf(bb);
       var cls=st==="free"?"flu-free":st==="pend"?"flu-pend":"flu-book";
       var lb=st==="free"?"ว่าง":st==="pend"?"รอยืนยัน":"จองแล้ว";
       return '<span class="flu '+cls+' flu-borrow" title="ยูนิต '+o.unit+' (ยืมจาก '+esc(o.sourceName)+') · '+lb+'">'+o.unit+"</span>";
-    }).join(""):"";
+    }).join("");
     boxes=own+borrowed;
+  } else {
+    boxes=units.map(function(u){return fluBox(u,c,k,s);}).join("");
   }
   return '<div class="flside"><div class="flname">'+esc(name)+'</div><div class="flus">'+boxes+"</div></div>";
 }
@@ -916,12 +920,11 @@ async function openBook(cid,u){
   V("fPName",b&&b.pName);V("fHN",b&&b.hn);V("fRight",b&&b.right);V("fWork",b&&b.work);V("fNote",b&&b.note);
   V("fAssist",b&&b.assist);
   var isRsv=isReservedClinic(clinic(cid));
-  $("fSubjectWrap").style.display=isRsv?"":"none";
-  if(isRsv){
-    var opts=sched(curKey)[curSess].map(clinic).filter(function(x){return x.id!==cid&&!isReservedClinic(x);});
-    $("fSubject").innerHTML='<option value="">— เลือกวิชา —</option>'+opts.map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+"</option>";}).join("");
-    $("fSubject").value=(b&&b.subjectClinicId)||"";
-  }
+  $("fSubjectWrap").style.display="";
+  $("fSubjectReq").style.display=isRsv?"":"none";
+  var opts=sched(curKey)[curSess].map(clinic).filter(function(x){return x.id!==cid&&!isReservedClinic(x);});
+  $("fSubject").innerHTML='<option value="">— เลือกวิชา —</option>'+opts.map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+"</option>";}).join("");
+  $("fSubject").value=(b&&b.subjectClinicId)||"";
   var canEmerg=EMERG_CLINICS.indexOf(cid)>-1;
   $("fEmergWrap").style.display=canEmerg?"":"none";
   $("fEmerg").checked=!!(b&&b.emergency);
@@ -966,7 +969,7 @@ async function saveBooking(){
   function g(id){return $(id).value.trim();}
   var isEmerg=EMERG_CLINICS.indexOf(c)>-1 && $("fEmerg").checked;
   var isRsv=isReservedClinic(clinic(c));
-  var subjectClinicId=isRsv?g("fSubject"):"";
+  var subjectClinicId=g("fSubject");
   var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:isEmerg?"-":g("fPPfx"),pName:isEmerg?"-":g("fPName"),
     hn:isEmerg?"-":g("fHN").replace(/\D/g,""),right:isEmerg?"-":g("fRight"),work:isEmerg?"ขอรับ Emergency case":g("fWork"),assist:g("fAssist"),
     emergency:isEmerg,note:g("fNote"),subjectClinicId:subjectClinicId};
