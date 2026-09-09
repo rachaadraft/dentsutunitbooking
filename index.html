@@ -1200,7 +1200,9 @@ async function collect(){
       schedOf(k)[s].forEach(function(cid){
         clinic(cid).units.forEach(function(u){
           var b=data.book[bkey(k,s,cid,u)];
-          if(b)rows.push({k:k,s:s,cid:cid,u:u,b:b});
+          /* ยูนิตที่ถูกยืมไปเป็นฐานเสริมของวิชาอื่น (b.subjectClinicId) ให้จัดเข้ากลุ่มวิชาปลายทางในรายงาน
+             แทนที่จะอยู่ในกลุ่มคลินิกต้นทางเดิม เพื่อให้คอลัมน์ซ้ายสุดแสดงวิชาที่เรียนจริง */
+          if(b)rows.push({k:k,s:s,cid:(b.subjectClinicId||cid),u:u,b:b});
         });
       });
     });
