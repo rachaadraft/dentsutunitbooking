@@ -191,8 +191,8 @@ html[data-theme="dark"] .flu-book{background:#3a1c22}
   <div class="menuWrap" id="menuWrap">
     <button class="btn line iconbtn" id="btnMenu" type="button" title="เมนู" aria-label="เมนู">☰</button>
     <div class="menuDrop" id="menuDrop">
-      <button class="menuItem" id="btnFloor" type="button">🏢 ภาพรวมคลินิกรายชั้น</button>
-      <button class="menuItem" id="btnTheme" type="button"><span id="btnThemeIcon">🌙</span> สลับโหมดสี</button>
+      <button class="menuItem" id="btnFloor" type="button">ภาพรวมคลินิกรายชั้น</button>
+      <button class="menuItem" id="btnTheme" type="button">สลับโหมดสี</button>
       <button class="menuItem" id="btnAdmin" type="button">เข้าสู่ระบบผู้ดูแล</button>
     </div>
   </div>
@@ -597,7 +597,6 @@ var isAdmin=sGet("ohc_admin",false)===true;
 var curTheme=sGet("ohc_theme","light");
 function applyTheme(){
   document.documentElement.setAttribute("data-theme",curTheme);
-  var b=$("btnThemeIcon"); if(b) b.textContent=curTheme==="dark"?"☀️":"🌙";
 }
 function toggleTheme(){
   curTheme=(curTheme==="dark"?"light":"dark");
