@@ -850,7 +850,9 @@ async function openFloorOverview(){
 }
 function rowsOf(k,ss){var out=[];
   ss.forEach(function(s){sched(k)[s].forEach(function(cid){clinic(cid).units.forEach(function(u){
-    var b=BOOK[bkey(k,s,cid,u)];if(b)out.push({k:k,s:s,cid:cid,u:u,b:b});});});});
+    var b=BOOK[bkey(k,s,cid,u)];
+    /* ยูนิตที่ถูกยืมไปเป็นฐานเสริมของวิชาอื่น ให้จัดเข้ากลุ่มวิชาปลายทาง แทนคลินิกต้นทางเดิม */
+    if(b)out.push({k:k,s:s,cid:(b.subjectClinicId||cid),u:u,b:b});});});});
   return out;}
 function renderSum(){
   var rows=rowsOf(curKey,[curSess]);
