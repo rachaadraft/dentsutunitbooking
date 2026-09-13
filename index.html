@@ -125,6 +125,21 @@ th{background:var(--w50);color:var(--w800);font-weight:600;font-size:13px;white-
 .histPop .hpRow b{font-weight:600}
 .histPop .hpLog{max-height:200px;overflow:auto;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
 .histPop .hpLog div{margin-bottom:4px;color:var(--muted)}
+/* ---------- ค้นหาอาจารย์แบบ real-time (combobox) ---------- */
+.tcombo{position:relative;width:100%}
+.tcDrop{position:absolute;z-index:60;top:100%;left:0;right:0;max-height:230px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--sh);display:none;margin-top:4px}
+.tcDrop.on{display:block}
+.tcItem{padding:8px 11px;cursor:pointer;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcItem:hover,.tcItem.hi{background:var(--w50)}
+.tcItem.tcEmpty{color:var(--muted);cursor:default}
+.tcItem.tcClear{color:var(--muted);border-bottom:1px dashed var(--line)}
+/* ---------- จัดการรายชื่ออาจารย์: ค้นหา + ลากจัดลำดับ ---------- */
+.tm-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:8px;align-items:center;background:var(--surface)}
+.tm-drag{cursor:grab;font-size:18px;color:var(--muted);user-select:none;touch-action:none;padding:4px 8px;display:flex;align-items:center;justify-content:center;line-height:1}
+.tm-drag:active{cursor:grabbing}
+.tm-row.dragging{opacity:.85;box-shadow:var(--sh);border-radius:8px;background:var(--w50);z-index:20}
+#tmgrBody.no-drag .tm-drag{visibility:hidden;pointer-events:none}
+.tm-row.tm-hide{display:none}
 
 /* ---------- ภาพรวมคลินิกรายชั้น ---------- */
 .flh{text-align:center;font-size:14px;font-weight:700;color:var(--w800);margin:22px 0 10px;padding-top:14px;border-top:1px dashed var(--line)}
@@ -357,7 +372,12 @@ html[data-theme="dark"] .flu-book{background:#3a1c22}
 <!-- MODAL teacher mgr -->
 <div class="mask" id="mTeacher"><div class="modal">
   <div class="mh"><h2>จัดการรายชื่ออาจารย์</h2><p class="sub">รายชื่ออาจารย์ผู้ควบคุมคลินิก (ใช้เลือกในตารางคลินิกรายวัน)</p></div>
-  <div class="mb"><div id="tmgrBody"></div><button class="btn sm" type="button" id="bAddT">+ เพิ่มรายชื่ออาจารย์</button></div>
+  <div class="mb">
+    <input type="text" id="tmgrSearch" class="inp" autocomplete="off" placeholder="🔍 ค้นหาชื่ออาจารย์..." style="margin-bottom:10px">
+    <span class="hint" id="tmgrHint" style="display:none">ล้างช่องค้นหาก่อน จึงจะลากจัดลำดับได้</span>
+    <div id="tmgrBody"></div>
+    <button class="btn sm" type="button" id="bAddT">+ เพิ่มรายชื่ออาจารย์</button>
+  </div>
   <div class="mf"><button class="btn" type="button" data-close="mTeacher">ปิด</button>
     <button class="btn primary" type="button" id="bSaveT">บันทึก</button></div>
 </div></div>
@@ -512,6 +532,38 @@ async function writeClinicDuty(k,s,clinicId,teacherId,baseName){
   return true;
 }
 function teacherName(id){for(var i=0;i<TEACHERS.length;i++)if(TEACHERS[i].id===id)return TEACHERS[i].name;return "";}
+/* ---------- ค้นหาอาจารย์แบบ real-time (ใช้ที่ dropdown "อาจารย์ผู้ควบคุม") ---------- */
+function teacherComboItems(query){
+  var q=(query||"").trim().toLowerCase();
+  return q?TEACHERS.filter(function(t){return t.name.toLowerCase().indexOf(q)>-1;}):TEACHERS.slice();
+}
+function renderTcDrop(dropEl,query){
+  var list=teacherComboItems(query);
+  dropEl.innerHTML='<div class="tcItem tcClear" data-id="">— ไม่ระบุอาจารย์ —</div>'
+    +(list.length?list.map(function(t){return '<div class="tcItem" data-id="'+esc(t.id)+'">'+esc(t.name)+"</div>";}).join("")
+      :'<div class="tcItem tcEmpty">ไม่พบชื่อที่ตรงกัน</div>');
+}
+function initTeacherCombo(root){
+  Array.prototype.forEach.call(root.querySelectorAll(".tcombo"),function(box){
+    var input=box.querySelector(".tcInput"),hidden=box.querySelector(".dutySel"),drop=box.querySelector(".tcDrop");
+    if(!input||!hidden||!drop||input._tcInit)return; input._tcInit=true;
+    function open(){renderTcDrop(drop,input.value);drop.classList.add("on");}
+    function close(){drop.classList.remove("on");}
+    input.addEventListener("input",open);
+    input.addEventListener("focus",open);
+    input.addEventListener("blur",function(){
+      setTimeout(function(){close();var nm=teacherName(hidden.value);if(input.value!==nm)input.value=nm;},150);
+    });
+    drop.addEventListener("mousedown",function(e){e.preventDefault();});
+    drop.addEventListener("click",function(e){
+      var it=e.target.closest(".tcItem");if(!it||it.classList.contains("tcEmpty"))return;
+      var id=it.getAttribute("data-id");
+      hidden.value=id;input.value=id?teacherName(id):"";
+      close();
+      hidden.dispatchEvent(new Event("change",{bubbles:true}));
+    });
+  });
+}
 function dutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId]&&TDUTY[k][s][clinicId].teacher)||"";}
 function baseDutyOf(k,s,clinicId){return (TDUTY[k]&&TDUTY[k][s]&&TDUTY[k][s][clinicId]&&TDUTY[k][s][clinicId].base)||"";}
 
@@ -722,9 +774,11 @@ function renderDay(){
           return '<div class="schedRow">'
             +'<label class="schedName"><input type="checkbox" value="'+c.id+'"'+(sc[curSess].indexOf(c.id)>-1?" checked":"")+"> "+esc(c.name)
             +' <span class="schedUnits">('+c.units.join(", ")+')</span></label>'
-            +'<select class="inp dutySel" data-cid="'+c.id+'"><option value="">— อาจารย์ผู้ควบคุม —</option>'
-            +TEACHERS.map(function(t){return '<option value="'+t.id+'"'+(dutyOf(k,curSess,c.id)===t.id?" selected":"")+'>'+esc(t.name)+"</option>";}).join("")
-            +'</select>'
+            +'<div class="tcombo" data-cid="'+c.id+'">'
+            +'<input type="text" class="inp tcInput" data-cid="'+c.id+'" autocomplete="off" placeholder="พิมพ์ชื่ออาจารย์เพื่อค้นหา..." value="'+esc(teacherName(dutyOf(k,curSess,c.id)))+'">'
+            +'<input type="hidden" class="dutySel" data-cid="'+c.id+'" value="'+esc(dutyOf(k,curSess,c.id)||"")+'">'
+            +'<div class="tcDrop" data-cid="'+c.id+'"></div>'
+            +'</div>'
             +'<select class="inp baseSel" data-cid="'+c.id+'"><option value="">— ฐานฝึก —</option>'
             +BASES.map(function(bn){return '<option value="'+esc(bn)+'"'+(baseDutyOf(k,curSess,c.id)===bn?" selected":"")+'>'+esc(bn)+"</option>";}).join("")
             +'</select></div>';
@@ -738,6 +792,7 @@ function renderDay(){
       Array.prototype.forEach.call($("schedChk").querySelectorAll("input,select"),function(el){
         el.addEventListener("change",function(){schedDirty=true;var h=$("schedDirtyHint");if(h)h.style.display="";});
       });
+      initTeacherCombo($("schedChk"));
     }
   } else { $("adminSched").innerHTML=""; schedDirty=false; }
 
@@ -1180,29 +1235,16 @@ function readMgr(){
 
 /* ---- ผู้จัดการรายชื่ออาจารย์ ---- */
 function renderTeacherMgr(){
-  $("tmgrBody").innerHTML=TEACHERS.length?TEACHERS.map(function(t,i){
-    return '<div class="r2" style="grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:8px;align-items:center" data-id="'+esc(t.id)+'">'
-      +'<div style="display:flex;flex-direction:column;gap:2px">'
-      +'<button class="btn sm" type="button" data-move="up"'+(i===0?" disabled":"")+' title="เลื่อนขึ้น" style="padding:2px 8px;line-height:1">▲</button>'
-      +'<button class="btn sm" type="button" data-move="down"'+(i===TEACHERS.length-1?" disabled":"")+' title="เลื่อนลง" style="padding:2px 8px;line-height:1">▼</button>'
-      +'</div>'
+  $("tmgrBody").innerHTML=TEACHERS.length?TEACHERS.map(function(t){
+    return '<div class="tm-row" data-id="'+esc(t.id)+'">'
+      +'<span class="tm-drag" title="ลากเพื่อจัดลำดับ">⠿</span>'
       +'<input class="inp tm-n" value="'+esc(t.name)+'" placeholder="ชื่ออาจารย์">'
       +'<button class="btn sm danger" type="button">ลบ</button></div>';}).join("")
     :'<div class="empty">ยังไม่มีรายชื่ออาจารย์ — กดปุ่มด้านล่างเพื่อเพิ่ม</div>';
-  Array.prototype.forEach.call($("tmgrBody").querySelectorAll("[data-move]"),function(b){
-    b.onclick=function(){
-      readTeacherMgr();
-      var id=b.closest("[data-id]").getAttribute("data-id");
-      var idx=-1;for(var qi=0;qi<TEACHERS.length;qi++){if(TEACHERS[qi].id===id){idx=qi;break;}}
-      if(idx<0)return;
-      var swapWith=b.getAttribute("data-move")==="up"?idx-1:idx+1;
-      if(swapWith<0||swapWith>=TEACHERS.length)return;
-      var tmp=TEACHERS[idx];TEACHERS[idx]=TEACHERS[swapWith];TEACHERS[swapWith]=tmp;
-      renderTeacherMgr();
-    };});
   Array.prototype.forEach.call($("tmgrBody").querySelectorAll(".btn.danger"),function(b){
     b.onclick=function(){readTeacherMgr();var id=b.closest("[data-id]").getAttribute("data-id");
       TEACHERS=TEACHERS.filter(function(t){return t.id!==id;});renderTeacherMgr();};});
+  applyTmgrFilter();
 }
 function readTeacherMgr(){
   var rows=$("tmgrBody").querySelectorAll("[data-id]");
@@ -1213,6 +1255,60 @@ function readTeacherMgr(){
     out.push({id:row.getAttribute("data-id"),name:nm});});
   TEACHERS=out;
 }
+/* ---------- ค้นหาชื่ออาจารย์แบบ real-time ในหน้าจัดการรายชื่อ ---------- */
+function applyTmgrFilter(){
+  var q=($("tmgrSearch")?$("tmgrSearch").value:"").trim().toLowerCase();
+  var body=$("tmgrBody");
+  Array.prototype.forEach.call(body.querySelectorAll(".tm-row"),function(row){
+    var nm=row.querySelector(".tm-n").value.toLowerCase();
+    row.classList.toggle("tm-hide", q!=="" && nm.indexOf(q)===-1);
+  });
+  body.classList.toggle("no-drag", q!=="");
+  if($("tmgrHint")) $("tmgrHint").style.display=q!==""?"":"none";
+}
+/* ---------- ลากจัดลำดับรายชื่ออาจารย์ (รองรับทั้งเมาส์และสัมผัส ผ่าน Pointer Events) ---------- */
+function initTeacherDrag(){
+  var body=$("tmgrBody"),dragEl=null,startY=0,pid=null;
+  body.addEventListener("pointerdown",function(e){
+    if(body.classList.contains("no-drag"))return;
+    var handle=e.target.closest(".tm-drag");if(!handle)return;
+    var row=handle.closest(".tm-row");if(!row)return;
+    e.preventDefault();
+    dragEl=row;pid=e.pointerId;
+    try{dragEl.setPointerCapture(pid);}catch(ex){}
+    dragEl.classList.add("dragging");
+    startY=e.clientY;
+    dragEl.style.position="relative";
+  });
+  body.addEventListener("pointermove",function(e){
+    if(!dragEl||e.pointerId!==pid)return;
+    var dy=e.clientY-startY;
+    dragEl.style.transform="translateY("+dy+"px)";
+    var rows=Array.prototype.slice.call(body.querySelectorAll(".tm-row:not(.tm-hide)"));
+    var draggedRect=dragEl.getBoundingClientRect();
+    var midY=draggedRect.top+draggedRect.height/2;
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i];if(r===dragEl)continue;
+      var rr=r.getBoundingClientRect(),mid=rr.top+rr.height/2;
+      if(midY<mid && r.compareDocumentPosition(dragEl)&Node.DOCUMENT_POSITION_FOLLOWING){
+        body.insertBefore(dragEl,r);startY=e.clientY;dragEl.style.transform="translateY(0px)";break;
+      } else if(midY>mid && r.compareDocumentPosition(dragEl)&Node.DOCUMENT_POSITION_PRECEDING){
+        body.insertBefore(dragEl,r.nextSibling);startY=e.clientY;dragEl.style.transform="translateY(0px)";break;
+      }
+    }
+  });
+  function endDrag(e){
+    if(!dragEl||(pid!==null&&e.pointerId!==pid))return;
+    try{dragEl.releasePointerCapture(pid);}catch(ex){}
+    dragEl.style.transform="";dragEl.style.position="";
+    dragEl.classList.remove("dragging");
+    dragEl=null;pid=null;
+    readTeacherMgr();
+  }
+  body.addEventListener("pointerup",endDrag);
+  body.addEventListener("pointercancel",endDrag);
+}
+
 
 /* ================= EXPORT ================= */
 async function collect(){
@@ -1394,8 +1490,10 @@ try{
     try{ await cloudSaveClinics(); }catch(e){ showErr(e); return; }
     closeM("mClinic");renderCal();renderDay();alert("บันทึกรายวิชาเรียบร้อย");
   };
-  $("bMgrT").onclick=function(){renderTeacherMgr();openM("mTeacher");};
+  $("bMgrT").onclick=function(){if($("tmgrSearch"))$("tmgrSearch").value="";renderTeacherMgr();openM("mTeacher");};
   $("bAddT").onclick=function(){readTeacherMgr();TEACHERS.push({id:"t"+Date.now(),name:""});renderTeacherMgr();};
+  if($("tmgrSearch")) $("tmgrSearch").addEventListener("input",applyTmgrFilter);
+  initTeacherDrag();
   $("bSaveT").onclick=async function(){
     readTeacherMgr();
     try{ await cloudSaveTeachers(); }catch(e){ showErr(e); return; }
