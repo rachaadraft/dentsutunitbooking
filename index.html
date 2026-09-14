@@ -111,7 +111,7 @@ html[data-theme="dark"] .pillDivider{background:rgba(255,255,255,.14)}
 .tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
 .tab{padding:9px 20px;border-radius:20px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500;transition:transform .22s var(--ease),box-shadow .22s var(--ease),background-color .2s,color .2s,border-color .2s}
 .tab:hover{transform:translateY(-1px);box-shadow:var(--sh)}
-.tab.on{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(0,113,227,.32)}
+.tab.on{background:#fe4444;color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(0,113,227,.32)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{padding:9px 18px;border-radius:20px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500;transition:transform .22s var(--ease),box-shadow .22s var(--ease),background-color .2s,color .2s,border-color .2s}
 .chip:hover{border-color:var(--w400);transform:translateY(-1px);box-shadow:var(--sh)}
@@ -264,7 +264,14 @@ html[data-theme="dark"]{
 .pillIcon-accent,
 .cell.today .num{
   background-image:none;
-  background-color:transparent;
+}
+.btn.primary,
+.pillIcon-accent{
+  background-color:#300f22 !important;
+}
+.btn.primary:hover,
+.pillIcon-accent:hover{
+  background-color:#300f22 !important;
 }
 .tab.on,
 .tab.on:hover{
