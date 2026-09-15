@@ -280,6 +280,38 @@ html[data-theme="dark"]{
 .btn.primary:hover{box-shadow:0 8px 22px rgba(91,35,125,.42)}
 .cell.today .num{box-shadow:0 3px 10px rgba(91,35,125,.4)}
 
+/* ---------- ตรวจสอบประวัติการนัดผู้ป่วย ---------- */
+.histBoard{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:14px}
+.histBoardRow{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
+.histBoardRow:last-child{border-bottom:none}
+.histBoardTime{color:var(--muted);font-size:11.5px;white-space:nowrap;flex:none}
+.histSearchWrap{position:relative;margin-bottom:14px}
+.histBaseGroup{margin-bottom:22px}
+.histBaseGroup h3{font-size:15px;margin:0 0 8px;color:var(--w800)}
+.histDetailBtn{background:#fe4444;color:#fff;border-color:transparent}
+.histDetailBtn:hover{background:#e23a3a;color:#fff}
+.histRowsWrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:14px;margin-top:10px}
+.histRow{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
+.histRow:last-child{border-bottom:none}
+.histRow.att-yes{background:rgba(21,128,61,.07)}
+.histRow.att-no{background:rgba(200,30,43,.05)}
+/* ---------- ตารางเรียนแยกฐานฝึก ---------- */
+.bsBaseBtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
+.bsCal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
+.bsCell{min-height:60px;background:var(--surface);padding:4px 5px;display:flex;flex-direction:column;gap:2px}
+.bsCell.off{background:var(--grey)}
+.bsCell .bsnum{font-weight:600;font-size:12px;color:var(--w800)}
+.bsCell .ev{font-size:9.5px}
+/* ---------- ประกาศ (Admin Announcement) ---------- */
+.announceItem{position:relative;background:var(--w50);border:1px solid var(--w400);border-radius:14px;padding:14px 40px 14px 16px;margin-bottom:10px}
+.announceItem:last-child{margin-bottom:0}
+.announceTopic{font-weight:700;color:var(--w800);margin-bottom:4px}
+.announceInfo{font-size:13.5px;color:var(--text);white-space:pre-wrap;line-height:1.6}
+.announceX{position:absolute;top:10px;right:10px;background:none;border:none;font-size:15px;line-height:1;color:var(--muted);cursor:pointer;padding:4px}
+.announceX:hover{color:var(--red)}
+.ann-tpl-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line)}
+.ann-tpl-row:last-child{border-bottom:none}
+
 /* ---------- แก้ไข: ช่องข้อความหลายบรรทัด (เช่น หมายเหตุ) ไม่ให้ล้นกรอบ ---------- */
 .inp{box-sizing:border-box;min-width:0;max-width:100%}
 textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
@@ -299,6 +331,8 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
     <button class="btn line iconbtn" id="btnMenu" type="button" title="เมนู" aria-label="เมนู">☰</button>
     <div class="menuDrop" id="menuDrop">
       <button class="menuItem" id="btnFloor" type="button">ภาพรวมคลินิกรายชั้น</button>
+      <button class="menuItem" id="btnHistory" type="button">ตรวจสอบประวัติการนัดผู้ป่วย</button>
+      <button class="menuItem" id="btnBaseSched" type="button">ตารางเรียนแยกฐานฝึก</button>
       <button class="menuItem" id="btnTheme" type="button">สลับโหมดสี</button>
       <button class="menuItem" id="btnAdmin" type="button">เข้าสู่ระบบผู้ดูแล</button>
     </div>
@@ -306,6 +340,11 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
 </div></header>
 
 <div class="wrap">
+
+  <div class="card" id="announceCard" style="display:none">
+    <h2>ประกาศ</h2>
+    <div id="announceList"></div>
+  </div>
 
   <div class="card">
     <div class="cal-top">
@@ -360,6 +399,7 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
       <button class="btn" type="button" id="bPdf">⤓ Export PDF · A4 · TH Sarabun 12pt</button>
       <button class="btn ghost" type="button" id="bMgr">⚙ จัดการรายวิชา / ยูนิต</button>
       <button class="btn ghost" type="button" id="bMgrT">⚙ จัดการรายชื่ออาจารย์</button>
+      <button class="btn ghost" type="button" id="bAnnounceMgr">📢 จัดการประกาศ</button>
       <button class="btn ghost" type="button" id="bBak">⤓ สำรองข้อมูล (JSON)</button>
       <button class="btn danger" type="button" id="bWipe">🗑 ล้างข้อมูลทั้งหมด</button>
     </div>
@@ -480,6 +520,56 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
   </div>
   <div class="mf"><button class="btn" type="button" data-close="mTeacher">ปิด</button>
     <button class="btn primary" type="button" id="bSaveT">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL ตรวจสอบประวัติการนัดผู้ป่วย -->
+<div class="mask" id="mHistory"><div class="modal" style="max-width:780px">
+  <div class="mh"><h2>ตรวจสอบประวัติการนัดผู้ป่วย</h2><p class="sub">ดูประวัติการจองยูนิตของนักศึกษาแต่ละคน แยกตามชื่อ-ฐานฝึก</p></div>
+  <div class="mb">
+    <h3 style="margin:0 0 8px;font-size:14.5px;color:var(--w800)">การจองล่าสุด (อัปเดตแบบ Real-time)</h3>
+    <div class="histBoard" id="histBoard"><div class="empty">กำลังโหลดข้อมูล...</div></div>
+    <hr style="border:none;border-top:1px dashed var(--line);margin:20px 0">
+    <h3 style="margin:0 0 8px;font-size:14.5px;color:var(--w800)">ประวัติการจองยูนิตรายบุคคล</h3>
+    <div class="histSearchWrap">
+      <input type="text" id="histSearch" class="inp" autocomplete="off" placeholder="🔍 ค้นหาชื่อนักศึกษา...">
+      <div class="tcDrop" id="histSearchDrop"></div>
+    </div>
+    <div id="histDash"><div class="empty">กำลังโหลดข้อมูล...</div></div>
+  </div>
+  <div class="mf"><div class="spacer"></div><button class="btn" type="button" data-close="mHistory">ปิด</button></div>
+</div></div>
+
+<!-- MODAL ตารางเรียนแยกฐานฝึก -->
+<div class="mask" id="mBaseSched"><div class="modal" style="max-width:640px">
+  <div class="mh"><h2>ตารางเรียนแยกฐานฝึก</h2><p class="sub">ดูว่าฐานฝึกใดมีคลินิก/วิชาใดบ้าง ในวันและช่วงเวลาใด</p></div>
+  <div class="mb">
+    <div class="bsBaseBtns" id="bsBaseBtns"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
+      <button class="nav" type="button" id="bsPrevM">‹</button>
+      <div id="bsTitle" style="font-weight:700;color:var(--w800);min-width:150px;text-align:center;font-size:15px">—</div>
+      <button class="nav" type="button" id="bsNextM">›</button>
+    </div>
+    <div class="bsCal" id="bsCal"></div>
+    <div class="legend" style="margin-top:12px">
+      <span><b class="ev am">เช้า</b> คลินิกภาคเช้า</span>
+      <span><b class="ev pm">บ่าย</b> คลินิกภาคบ่าย</span>
+    </div>
+  </div>
+  <div class="mf"><div class="spacer"></div><button class="btn" type="button" data-close="mBaseSched">ปิด</button></div>
+</div></div>
+
+<!-- MODAL จัดการประกาศ -->
+<div class="mask" id="mAnnounce"><div class="modal">
+  <div class="mh"><h2>จัดการประกาศ (Broadcast)</h2><p class="sub">ข้อความประกาศจะแสดงเหนือปฏิทินให้นักศึกษาทุกคนเห็นทันทีที่เข้าเว็บไซต์</p></div>
+  <div class="mb">
+    <div id="annMgrBody"></div>
+    <button class="btn sm" type="button" id="bAddAnn">+ สร้างประกาศใหม่</button>
+    <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0">
+    <b style="font-size:13.5px;color:var(--w800)">Template ที่บันทึกไว้</b>
+    <div id="annTplBody" style="margin-top:8px"></div>
+  </div>
+  <div class="mf"><button class="btn" type="button" data-close="mAnnounce">ปิด</button>
+    <button class="btn primary" type="button" id="bSaveAnn">บันทึกประกาศทั้งหมด</button></div>
 </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -738,6 +828,9 @@ function cloudSubscribe(){
     .on("postgres_changes",{event:"*",schema:"public",table:"teachers"},function(){
       cloudLoadTeachers().then(function(){renderDay();}).catch(showErr);
     })
+    .on("postgres_changes",{event:"*",schema:"public",table:"announcements"},function(){
+      cloudLoadAnnouncements().then(renderAnnounceCard).catch(showErr);
+    })
     .subscribe();
 }
 var savingInProgress=false;
@@ -768,6 +861,302 @@ function toggleTheme(){
   applyTheme();
 }
 applyTheme();
+
+/* ==========================================================================
+   ฟีเจอร์ 3: ประกาศ (Admin Announcement Broadcast)
+   ========================================================================== */
+var ANNOUNCEMENTS=[];
+var TEMPLATES=[];
+async function cloudLoadAnnouncements(){
+  if(!sb) return;
+  var res=await sb.from("announcements").select("*").order("sort_order",{ascending:true});
+  if(res.error) throw res.error;
+  ANNOUNCEMENTS=(res.data||[]).map(function(r){return {id:r.id,topic:r.topic||"",information:r.information||""};});
+}
+async function cloudSaveAnnouncements(){
+  if(!sb) return;
+  var existing=await sb.from("announcements").select("id");
+  if(existing.error){showErr(existing.error);return;}
+  var keepIds=ANNOUNCEMENTS.map(function(a){return a.id;});
+  var toDelete=(existing.data||[]).map(function(r){return r.id;}).filter(function(id){return keepIds.indexOf(id)===-1;});
+  if(toDelete.length){
+    var delRes=await sb.from("announcements").delete().in("id",toDelete);
+    if(delRes.error){showErr(delRes.error);return;}
+  }
+  if(!ANNOUNCEMENTS.length) return;
+  var rows=ANNOUNCEMENTS.map(function(a,i){return {id:a.id,topic:a.topic,information:a.information,sort_order:i};});
+  var upRes=await sb.from("announcements").upsert(rows);
+  if(upRes.error) showErr(upRes.error);
+}
+async function cloudLoadTemplates(){
+  if(!sb) return;
+  var res=await sb.from("announcement_templates").select("*").order("created_at",{ascending:false});
+  if(res.error) throw res.error;
+  TEMPLATES=res.data||[];
+}
+async function cloudSaveTemplate(topic,information){
+  if(!sb) return;
+  var insRes=await sb.from("announcement_templates").insert({topic:topic,information:information});
+  if(insRes.error){showErr(insRes.error);return;}
+  await cloudLoadTemplates();
+}
+async function cloudDeleteTemplate(id){
+  if(!sb) return;
+  var delRes=await sb.from("announcement_templates").delete().eq("id",id);
+  if(delRes.error){showErr(delRes.error);return;}
+  await cloudLoadTemplates();
+}
+function dismissedAnnounceIds(){return sGet("ohc_dismissed_announce",[]);}
+function renderAnnounceCard(){
+  if(!$("announceCard"))return;
+  var dismissed=dismissedAnnounceIds();
+  var active=ANNOUNCEMENTS.filter(function(a){return dismissed.indexOf(a.id)===-1 && (a.topic||a.information);});
+  if(!active.length){$("announceCard").style.display="none";return;}
+  $("announceCard").style.display="";
+  $("announceList").innerHTML=active.map(function(a){
+    return '<div class="announceItem" data-id="'+esc(a.id)+'"><button class="announceX" type="button" data-id="'+esc(a.id)+'" aria-label="ปิด">✕</button>'
+      +'<div class="announceTopic">'+esc(a.topic)+'</div><div class="announceInfo">'+esc(a.information)+'</div></div>';
+  }).join("");
+  Array.prototype.forEach.call($("announceList").querySelectorAll(".announceX"),function(btn){
+    btn.onclick=function(){
+      var id=btn.getAttribute("data-id");
+      var d=dismissedAnnounceIds(); if(d.indexOf(id)===-1){d.push(id);sSet("ohc_dismissed_announce",d);}
+      renderAnnounceCard();
+    };
+  });
+}
+function renderAnnounceMgr(){
+  var body=$("annMgrBody");
+  body.innerHTML=ANNOUNCEMENTS.length?ANNOUNCEMENTS.map(function(a,i){
+    return '<div class="ann-row" data-i="'+i+'" style="border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:14px">'
+      +'<div class="f"><label>หัวข้อประกาศ (Topic)</label><input class="inp annTopic" data-i="'+i+'" value="'+esc(a.topic)+'"></div>'
+      +'<div class="f"><label>เนื้อหา (Information)</label><textarea class="inp annInfo" rows="3" data-i="'+i+'">'+esc(a.information)+'</textarea></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm annDelBtn" type="button" data-i="'+i+'">ลบประกาศนี้</button>'
+      +'<button class="btn sm annSaveTplBtn" type="button" data-i="'+i+'">💾 บันทึกเป็น Template</button></div></div>';
+  }).join(""):'<div class="empty">ยังไม่มีประกาศ — กด "สร้างประกาศใหม่"</div>';
+  Array.prototype.forEach.call(body.querySelectorAll(".annTopic"),function(inp){
+    inp.addEventListener("input",function(){ANNOUNCEMENTS[+inp.getAttribute("data-i")].topic=inp.value;});});
+  Array.prototype.forEach.call(body.querySelectorAll(".annInfo"),function(ta){
+    ta.addEventListener("input",function(){ANNOUNCEMENTS[+ta.getAttribute("data-i")].information=ta.value;});});
+  Array.prototype.forEach.call(body.querySelectorAll(".annDelBtn"),function(btn){
+    btn.onclick=function(){ANNOUNCEMENTS.splice(+btn.getAttribute("data-i"),1);renderAnnounceMgr();};});
+  Array.prototype.forEach.call(body.querySelectorAll(".annSaveTplBtn"),function(btn){
+    btn.onclick=async function(){
+      var a=ANNOUNCEMENTS[+btn.getAttribute("data-i")];
+      if(!a.topic&&!a.information){alert("กรุณากรอกหัวข้อหรือเนื้อหาก่อนบันทึก Template");return;}
+      try{ await cloudSaveTemplate(a.topic,a.information); renderAnnounceMgr(); alert("บันทึก Template แล้ว"); }catch(e){ showErr(e); }
+    };});
+  var tplBody=$("annTplBody");
+  tplBody.innerHTML=TEMPLATES.length?TEMPLATES.map(function(t){
+    return '<div class="ann-tpl-row"><span><b>'+esc(t.topic||"(ไม่มีหัวข้อ)")+'</b></span>'
+      +'<span style="display:flex;gap:8px"><button class="btn sm annUseTpl" type="button" data-id="'+esc(t.id)+'">+ ใช้ Template นี้</button>'
+      +'<button class="btn sm annDelTpl" type="button" data-id="'+esc(t.id)+'">ลบ</button></span></div>';
+  }).join(""):'<span class="hint">ยังไม่มี Template ที่บันทึกไว้</span>';
+  Array.prototype.forEach.call(tplBody.querySelectorAll(".annUseTpl"),function(btn){
+    btn.onclick=function(){
+      var id=btn.getAttribute("data-id");
+      var t=TEMPLATES.filter(function(x){return x.id===id;})[0];
+      if(!t)return;
+      ANNOUNCEMENTS.push({id:"ann"+Date.now(),topic:t.topic||"",information:t.information||""});
+      renderAnnounceMgr();
+    };});
+  Array.prototype.forEach.call(tplBody.querySelectorAll(".annDelTpl"),function(btn){
+    btn.onclick=async function(){
+      if(!confirm("ลบ Template นี้?"))return;
+      try{ await cloudDeleteTemplate(btn.getAttribute("data-id")); renderAnnounceMgr(); }catch(e){ showErr(e); }
+    };});
+}
+
+/* ==========================================================================
+   ฟีเจอร์ 1: ตรวจสอบประวัติการนัดผู้ป่วย
+   - นักศึกษาคนเดียวกัน = ชื่อ + ฐานฝึก ตรงกัน (ไม่นับชั้นปี)
+   - ต้องดึงข้อมูลย้อนหลัง "ทั้งหมด" (ไม่ใช่แค่เดือนที่มองเห็นในปฏิทินหลัก)
+   ========================================================================== */
+var ALL_BOOK_LIST=[];   /* การจองทั้งหมดทุกวันที่ ทุกปี (โหลดเมื่อเปิดโมดัลนี้เท่านั้น) */
+var ALL_TDUTY_LIST=[];  /* ตารางฐานฝึกต่อคลินิกทั้งหมดทุกวันที่ (base_name ที่แอดมินตั้งไว้ในตารางคลินิกรายวัน) */
+var histSelectedStudent=null;
+var histLiveChannel=null;
+async function loadHistLiveBoard(){
+  if(!sb) return [];
+  var res=await sb.from("bookings").select("*").order("updated_at",{ascending:false}).limit(50);
+  if(res.error) throw res.error;
+  return (res.data||[]).map(function(r){var o=bxRow(r);o.date=r.date;o.session=r.session;o.clinicId=r.clinic_id;o.unit=r.unit;return o;});
+}
+async function loadAllHistoryData(){
+  if(!sb) return;
+  var bookRes=await sb.from("bookings").select("*").order("updated_at",{ascending:false});
+  if(bookRes.error) throw bookRes.error;
+  ALL_BOOK_LIST=(bookRes.data||[]).map(function(r){var o=bxRow(r);o.date=r.date;o.session=r.session;o.clinicId=r.clinic_id;o.unit=r.unit;return o;});
+  var dutyRes=await sb.from("teacher_duty").select("date,session,clinic_id,teacher_id,base_name");
+  if(dutyRes.error) throw dutyRes.error;
+  ALL_TDUTY_LIST=(dutyRes.data||[]).filter(function(r){return r.base_name;}).map(function(r){return {k:r.date,s:r.session,cid:r.clinic_id,teacher:r.teacher_id||"",base:r.base_name};});
+}
+/* รายชื่อนักศึกษาที่ไม่ซ้ำ (ระบุตัวตนด้วย ชื่อ+ฐานฝึก) จากข้อมูลการจองทั้งหมด */
+function allStudents(){
+  var map={},out=[];
+  ALL_BOOK_LIST.forEach(function(b){
+    if(!b.sName||!b.base) return;
+    var kk=b.base+"||"+b.sName;
+    if(!map[kk]){map[kk]=true;out.push({sName:b.sName,base:b.base});}
+  });
+  return out;
+}
+/* คาบเรียน (วัน+ช่วง+คลินิก) ทั้งหมดที่เคยเปิดให้ "ฐานฝึก" นี้ลงปฏิบัติงาน เรียงใหม่ล่าสุดก่อน */
+function basePeriods(base){
+  var seen={},out=[];
+  ALL_TDUTY_LIST.forEach(function(t){
+    if(t.base!==base) return;
+    var kk=t.k+"|"+t.s+"|"+t.cid;
+    if(seen[kk]) return; seen[kk]=true;
+    out.push(t);
+  });
+  out.sort(function(a,b){ if(a.k!==b.k) return a.k<b.k?1:-1; if(a.s!==b.s) return a.s==="pm"?-1:1; return 0; });
+  return out;
+}
+/* รายละเอียดนักศึกษาคนเดียว: เทียบคาบที่เปิดของฐานฝึก กับคาบที่นักศึกษาคนนี้จองยูนิตจริง */
+function studentDetail(sName,base){
+  var periods=basePeriods(base);
+  var byPeriod={};
+  ALL_BOOK_LIST.forEach(function(b){
+    if(b.base!==base||b.sName!==sName) return;
+    var kk=b.date+"|"+b.session+"|"+b.clinicId;
+    (byPeriod[kk]=byPeriod[kk]||[]).push(b);
+  });
+  var rows=periods.map(function(p){
+    var kk=p.k+"|"+p.s+"|"+p.cid;
+    var bks=byPeriod[kk]||[];
+    return {k:p.k,s:p.s,cid:p.cid,subject:clinic(p.cid).name,teacher:teacherName(p.teacher),attended:bks.length>0,bookings:bks};
+  });
+  return {rows:rows,total:periods.length,attended:rows.filter(function(r){return r.attended;}).length};
+}
+function renderHistBoardRows(list){
+  if(!list.length) return '<div class="empty">ยังไม่มีการจองในระบบ</div>';
+  return list.map(function(b){
+    return '<div class="histBoardRow"><span><b>นศ.ทพ.'+esc(b.sName||"—")+'</b> · ฐานฝึก'+esc(b.base||"—")+' · ยูนิต '+esc(b.unit)+' · '+esc(clinic(b.clinicId).name)+(b.work?(" · "+esc(b.work)):"")+'</span>'
+      +'<span class="histBoardTime">'+esc(thShort(b.date))+" · "+SESS[b.session]+(b.updatedAt?(" · "+stamp(b.updatedAt)):"")+'</span></div>';
+  }).join("");
+}
+async function refreshHistBoard(){
+  try{ var list=await loadHistLiveBoard(); if($("histBoard")) $("histBoard").innerHTML=renderHistBoardRows(list); }catch(e){ showErr(e); }
+}
+function renderStudentDashboard(){
+  var el=$("histDash"); if(!el) return;
+  if(histSelectedStudent){
+    var d=studentDetail(histSelectedStudent.sName,histSelectedStudent.base);
+    var header='<h3 style="margin:0 0 4px">นศ.ทพ.'+esc(histSelectedStudent.sName)+' ฐานฝึก'+esc(histSelectedStudent.base)+'</h3>'
+      +'<p class="sub" style="margin:0 0 10px">จองยูนิตสำเร็จ <b style="color:var(--w800)">'+d.attended+'</b> จากทั้งหมด <b style="color:var(--w800)">'+d.total+'</b> คาบที่เปิดให้ลงปฏิบัติงานในฐานฝึกนี้</p>';
+    var rowsHtml=d.rows.length?d.rows.map(function(r){
+      var work=r.bookings.map(function(b){return "ยูนิต "+esc(b.unit)+(b.work?(" · "+esc(b.work)):"");}).join("<br>");
+      return '<div class="histRow '+(r.attended?"att-yes":"att-no")+'"><span><b>'+esc(thShort(r.k))+'</b> · '+SESS[r.s]+' · '+esc(r.subject)+(r.teacher?(' · อาจารย์ผู้ควบคุม: '+esc(r.teacher)):'')+'</span>'
+        +'<span>'+(r.attended?("✅ เข้าปฏิบัติงาน"+(work?("<br>"+work):"")):"❌ ไม่ได้จองยูนิต")+'</span></div>';
+    }).join(""):'<div class="empty">ยังไม่มีคาบที่เปิดให้ลงปฏิบัติงานสำหรับฐานฝึกนี้</div>';
+    el.innerHTML=header+'<div class="histRowsWrap">'+rowsHtml+'</div><button class="btn sm" type="button" id="histBackBtn" style="margin-top:12px">← กลับไปที่ตารางรายชื่อ</button>';
+    $("histBackBtn").onclick=function(){histSelectedStudent=null;renderStudentDashboard();};
+    return;
+  }
+  var byBase={};
+  allStudents().forEach(function(s){(byBase[s.base]=byBase[s.base]||[]).push(s);});
+  var html="";
+  BASES.forEach(function(base){
+    var list=(byBase[base]||[]).slice().sort(function(a,b){return a.sName.localeCompare(b.sName,"th");});
+    if(!list.length) return;
+    html+='<div class="histBaseGroup"><h3>ฐานฝึก'+esc(base)+'</h3><div class="tw"><table><thead><tr><th>นักศึกษา</th><th>จองสำเร็จ</th><th></th></tr></thead><tbody>'
+      +list.map(function(s){
+        var d=studentDetail(s.sName,s.base);
+        return '<tr><td>นศ.ทพ.'+esc(s.sName)+'</td><td>'+d.attended+' / '+d.total+' คาบ</td>'
+          +'<td><button class="btn sm histDetailBtn" type="button" data-name="'+esc(s.sName)+'" data-base="'+esc(s.base)+'">แสดงรายละเอียดการนัด</button></td></tr>';
+      }).join("")+"</tbody></table></div></div>";
+  });
+  el.innerHTML=html||'<div class="empty">ยังไม่มีข้อมูลการจองของนักศึกษา</div>';
+  Array.prototype.forEach.call(el.querySelectorAll(".histDetailBtn"),function(btn){
+    btn.onclick=function(){histSelectedStudent={sName:btn.getAttribute("data-name"),base:btn.getAttribute("data-base")};renderStudentDashboard();};
+  });
+}
+function renderHistSearchDrop(){
+  var drop=$("histSearchDrop"),q=($("histSearch").value||"").trim().toLowerCase();
+  if(!q){drop.classList.remove("on");drop.innerHTML="";return;}
+  var matches=allStudents().filter(function(s){return s.sName.toLowerCase().indexOf(q)>-1;}).slice(0,20);
+  drop.innerHTML=matches.length?matches.map(function(s){
+    return '<div class="tcItem" data-name="'+esc(s.sName)+'" data-base="'+esc(s.base)+'">นศ.ทพ.'+esc(s.sName)+' · ฐานฝึก'+esc(s.base)+'</div>';
+  }).join(""):'<div class="tcItem tcEmpty">ไม่พบชื่อที่ตรงกัน</div>';
+  drop.classList.add("on");
+}
+var histResyncTimer=null;
+function histResyncAndRender(){
+  clearTimeout(histResyncTimer);
+  histResyncTimer=setTimeout(function(){
+    refreshHistBoard();
+    loadAllHistoryData().then(renderStudentDashboard).catch(showErr);
+  },500);
+}
+function subscribeHistLive(){
+  if(!sb||histLiveChannel) return;
+  histLiveChannel=sb.channel("ohc_hist_live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"bookings"},histResyncAndRender)
+    .on("postgres_changes",{event:"*",schema:"public",table:"teacher_duty"},histResyncAndRender)
+    .subscribe();
+}
+function unsubscribeHistLive(){
+  if(histLiveChannel&&sb){ sb.removeChannel(histLiveChannel); histLiveChannel=null; }
+}
+async function openHistoryModal(){
+  openM("mHistory");
+  histSelectedStudent=null;
+  $("histSearch").value="";
+  $("histSearchDrop").classList.remove("on");
+  $("histBoard").innerHTML='<div class="empty">กำลังโหลดข้อมูล...</div>';
+  $("histDash").innerHTML='<div class="empty">กำลังโหลดข้อมูล...</div>';
+  subscribeHistLive();
+  try{
+    await refreshHistBoard();
+    await loadAllHistoryData();
+    renderStudentDashboard();
+  }catch(e){ showErr(e); }
+}
+
+/* ==========================================================================
+   ฟีเจอร์ 2: ตารางเรียนแยกฐานฝึก
+   ========================================================================== */
+var bsBase=BASES[0];
+var bsY=new Date().getFullYear(), bsM=new Date().getMonth();
+function baseSchedFor(k,s,base){
+  return ALL_TDUTY_LIST.filter(function(t){return t.k===k&&t.s===s&&t.base===base;}).map(function(t){return clinic(t.cid).name;});
+}
+function renderBsBaseBtns(){
+  $("bsBaseBtns").innerHTML=BASES.map(function(b){
+    return '<div class="chip'+(bsBase===b?" on":"")+'" data-base="'+esc(b)+'">'+esc(b)+"</div>";
+  }).join("");
+  Array.prototype.forEach.call($("bsBaseBtns").querySelectorAll(".chip"),function(el){
+    el.onclick=function(){bsBase=el.getAttribute("data-base");renderBsBaseBtns();renderBsCal();};
+  });
+}
+function renderBsCal(){
+  $("bsTitle").textContent=TH_M[bsM]+" "+(bsY+543);
+  var h="";
+  for(var w=0;w<7;w++) h+='<div class="wk'+((w===0||w===6)?" off":"")+'" style="padding:6px 2px;font-size:12px">'+WK[w]+"</div>";
+  var start=new Date(bsY,bsM,1).getDay();
+  var g=new Date(bsY,bsM,1); g.setDate(g.getDate()-start);
+  for(var i=0;i<42;i++){
+    var dt=new Date(g.getFullYear(),g.getMonth(),g.getDate()+i);
+    var k=key(dt),out=dt.getMonth()!==bsM,off=isWknd(dt);
+    var cls="bsCell"+(off?" off":"");
+    var inner='<div class="bsnum" style="'+(out?"color:#c7c7cc":"")+'">'+dt.getDate()+"</div>";
+    if(!off){
+      var am=baseSchedFor(k,"am",bsBase), pm=baseSchedFor(k,"pm",bsBase);
+      if(am.length) inner+='<div class="ev am">'+esc(am.join(", "))+"</div>";
+      if(pm.length) inner+='<div class="ev pm">'+esc(pm.join(", "))+"</div>";
+    }
+    h+='<div class="'+cls+'">'+inner+"</div>";
+  }
+  $("bsCal").innerHTML=h;
+}
+async function openBaseSchedModal(){
+  openM("mBaseSched");
+  bsY=new Date().getFullYear(); bsM=new Date().getMonth();
+  renderBsBaseBtns();
+  $("bsCal").innerHTML='<div class="empty">กำลังโหลดข้อมูล...</div>';
+  try{ await loadAllHistoryData(); renderBsCal(); }catch(e){ showErr(e); }
+}
 
 /* ================= HELPERS ================= */
 function $(id){return document.getElementById(id);}
@@ -1604,10 +1993,10 @@ async function exportPDF(){
 
 /* ================= MODAL / EVENTS ================= */
 function openM(id){$(id).classList.add("on");}
-function closeM(id){$(id).classList.remove("on");}
+function closeM(id){$(id).classList.remove("on");if(id==="mHistory")unsubscribeHistLive();}
 function showErr(e){var eb=$("err");eb.style.display="block";eb.innerHTML="เกิดข้อผิดพลาด: "+esc(e&&e.message?e.message:String(e))+'<button id="errClose" type="button" title="ปิด">✕</button>';$("errClose").onclick=function(){eb.style.display="none";};}
 Array.prototype.forEach.call(document.querySelectorAll(".mask"),function(m){
-  m.onclick=function(e){if(e.target===m)m.classList.remove("on");};});
+  m.onclick=function(e){if(e.target===m)closeM(m.id);};});
 Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(b){
   b.onclick=function(){closeM(b.getAttribute("data-close"));};});
 
@@ -1620,6 +2009,30 @@ try{
   $("btnToday").onclick=function(){var n=firstWeekday(new Date());selectDay(key(n));};
   $("btnTheme").onclick=toggleTheme;
   $("btnFloor").onclick=openFloorOverview;
+  $("btnHistory").onclick=openHistoryModal;
+  $("btnBaseSched").onclick=openBaseSchedModal;
+  $("histSearch").addEventListener("input",renderHistSearchDrop);
+  $("histSearch").addEventListener("focus",renderHistSearchDrop);
+  $("histSearchDrop").addEventListener("mousedown",function(e){e.preventDefault();});
+  $("histSearchDrop").addEventListener("click",function(e){
+    var it=e.target.closest(".tcItem");if(!it||it.classList.contains("tcEmpty"))return;
+    histSelectedStudent={sName:it.getAttribute("data-name"),base:it.getAttribute("data-base")};
+    $("histSearch").value="";$("histSearchDrop").classList.remove("on");
+    renderStudentDashboard();
+  });
+  document.addEventListener("click",function(e){
+    if($("histSearchDrop")&&!$("histSearchDrop").contains(e.target)&&e.target!==$("histSearch")) $("histSearchDrop").classList.remove("on");
+  });
+  $("bsPrevM").onclick=function(){bsM--;if(bsM<0){bsM=11;bsY--;}renderBsCal();};
+  $("bsNextM").onclick=function(){bsM++;if(bsM>11){bsM=0;bsY++;}renderBsCal();};
+  $("bAnnounceMgr").onclick=async function(){
+    try{ await cloudLoadTemplates(); }catch(e){ showErr(e); }
+    renderAnnounceMgr();openM("mAnnounce");
+  };
+  $("bAddAnn").onclick=function(){ANNOUNCEMENTS.push({id:"ann"+Date.now(),topic:"",information:""});renderAnnounceMgr();};
+  $("bSaveAnn").onclick=async function(){
+    try{ await cloudSaveAnnouncements(); closeM("mAnnounce"); renderAnnounceCard(); alert("บันทึกประกาศเรียบร้อย"); }catch(e){ showErr(e); }
+  };
   $("btnMenu").onclick=function(e){e.stopPropagation();$("menuDrop").classList.toggle("on");};
   Array.prototype.forEach.call(document.querySelectorAll("#menuDrop .menuItem"),function(mi){
     mi.addEventListener("click",function(){$("menuDrop").classList.remove("on");});});
@@ -1690,6 +2103,8 @@ try{
         await cloudLoadClinics();
         await cloudLoadTeachers();
         await loadCalendarWindow();
+        await cloudLoadAnnouncements();
+        renderAnnounceCard();
         cloudSubscribe();
         refresh();
       }
