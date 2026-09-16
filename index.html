@@ -280,11 +280,9 @@ html[data-theme="dark"]{
 .btn.primary:hover{box-shadow:0 8px 22px rgba(91,35,125,.42)}
 .cell.today .num{box-shadow:0 3px 10px rgba(91,35,125,.4)}
 
-.cardIconBtn{position:relative;width:36px;height:36px;border-radius:50%;border:1px solid var(--w400);background:var(--w50);color:var(--w800);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0;transition:transform .25s var(--ease),background-color .2s,box-shadow .25s var(--ease),border-color .2s}
-.cardIconBtn:hover{background:var(--w100);box-shadow:var(--sh);transform:translateY(-1px) scale(1.07)}
+.cardIconBtn{position:relative;width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--w800);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0;transition:transform .25s var(--ease)}
+.cardIconBtn:hover{transform:translateY(-1px) scale(1.07)}
 .cardIconBtn:active{transform:scale(.9);transition-duration:.12s}
-html[data-theme="dark"] .cardIconBtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
-html[data-theme="dark"] .cardIconBtn:hover{background:rgba(255,255,255,.16)}
 .histBoard{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:14px}
 .histBoardRow{padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
 .histBoardRow:last-child{border-bottom:none}
@@ -308,8 +306,10 @@ html[data-theme="dark"] .cardIconBtn:hover{background:rgba(255,255,255,.16)}
 /* ตารางที่แสดงข้อมูลหลายชุดจากหลายกลุ่ม (เช่น แยกตามฐานฝึก/คลินิก) ต้องมีความกว้างคอลัมน์คงที่
    เท่ากันทุกตาราง ไม่ให้ auto-size ตามเนื้อหาต่างกันไปในแต่ละกลุ่ม */
 .fixedTable{table-layout:fixed}
-.fixedTable th{white-space:normal;word-break:break-word;line-height:1.3}
-.fixedTable td{word-break:break-word}
+.fixedTable th{white-space:nowrap;line-height:1.3}
+.fixedTable td{white-space:nowrap}
+.fixedTable.sumTbl td:nth-child(3),.fixedTable.sumTbl td:nth-child(5),.fixedTable.sumTbl td:nth-child(8),.fixedTable.sumTbl td:nth-child(9),.fixedTable.sumTbl td:nth-child(10){white-space:normal;word-break:break-word}
+.fixedTable.histTbl td:nth-child(1){white-space:normal;word-break:break-word}
 /* ---------- ตารางเรียนแยกฐานฝึก ---------- */
 .bsBaseBtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
 .bsCal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
@@ -1086,7 +1086,7 @@ function renderStudentDashboard(){
   BASES.forEach(function(base){
     var list=(byBase[base]||[]).slice().sort(function(a,b){return a.sName.localeCompare(b.sName,"th");});
     if(!list.length) return;
-    html+='<div class="histBaseGroup"><h3>ฐานฝึก'+esc(base)+'</h3><div class="tw"><table class="fixedTable" style="min-width:480px"><colgroup><col style="width:170px"><col style="width:130px"><col style="width:180px"></colgroup><thead><tr><th style="text-align:left">นักศึกษา</th><th style="text-align:center">จองสำเร็จ</th><th style="text-align:right"></th></tr></thead><tbody>'
+    html+='<div class="histBaseGroup"><h3>ฐานฝึก'+esc(base)+'</h3><div class="tw"><table class="fixedTable histTbl" style="min-width:580px"><colgroup><col style="width:220px"><col style="width:140px"><col style="width:220px"></colgroup><thead><tr><th style="text-align:left">นักศึกษา</th><th style="text-align:center">จองสำเร็จ</th><th style="text-align:right"></th></tr></thead><tbody>'
       +list.map(function(s){
         var d=studentDetail(s.sName,s.base);
         return '<tr><td style="text-align:left">นศ.ทพ.'+esc(s.sName)+'</td><td style="text-align:center">'+d.attended+' / '+d.total+' คาบ</td>'
@@ -1446,9 +1446,9 @@ function renderSum(){
   $("sum").innerHTML=Object.keys(byC).map(function(cid){
     return '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--w800)">'+esc(clinic(cid).name)
      +' <span style="color:var(--muted);font-weight:400;font-size:13px">('+byC[cid].length+" ยูนิต)</span></h3>"
-     +'<div class="tw"><table class="fixedTable" style="min-width:1240px"><colgroup>'
-     +'<col style="width:60px"><col style="width:60px"><col style="width:150px"><col style="width:110px"><col style="width:150px"><col style="width:80px"><col style="width:100px"><col style="width:170px"><col style="width:110px"><col style="width:120px"><col style="width:80px"><col style="width:50px">'
-     +'</colgroup><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
+     +'<div class="tw"><table class="fixedTable sumTbl" style="min-width:1750px"><colgroup>'
+     +'<col style="width:55px"><col style="width:55px"><col style="width:210px"><col style="width:110px"><col style="width:220px"><col style="width:100px"><col style="width:200px"><col style="width:260px"><col style="width:160px"><col style="width:200px"><col style="width:90px"><col style="width:90px">'
+     +'</colgroup><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>ประวัติ</th></tr></thead><tbody>'
      +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
        var hi=SUM_HIST.length; SUM_HIST.push(b);
        return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
