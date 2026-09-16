@@ -282,8 +282,10 @@ html[data-theme="dark"]{
 
 /* ---------- ตรวจสอบประวัติการนัดผู้ป่วย ---------- */
 .histBoard{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:14px}
-.histBoardRow{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
+.histBoardRow{padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
 .histBoardRow:last-child{border-bottom:none}
+.hbrTop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hbrDetail{margin-top:3px;color:var(--muted)}
 .histBoardTime{color:var(--muted);font-size:11.5px;white-space:nowrap;flex:none}
 .histSearchWrap{position:relative;margin-bottom:14px}
 .histBaseGroup{margin-bottom:22px}
@@ -291,10 +293,19 @@ html[data-theme="dark"]{
 .histDetailBtn{background:#fe4444;color:#fff;border-color:transparent}
 .histDetailBtn:hover{background:#e23a3a;color:#fff}
 .histRowsWrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:14px;margin-top:10px}
-.histRow{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
+.histRow{padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
 .histRow:last-child{border-bottom:none}
 .histRow.att-yes{background:rgba(21,128,61,.07)}
 .histRow.att-no{background:rgba(200,30,43,.05)}
+.hrTop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hrWhen{flex:1 1 auto;min-width:0}
+.hrStatus{flex:none;font-weight:600;white-space:nowrap}
+.hrDetail{margin-top:4px;color:var(--muted);font-size:12.5px}
+/* ตารางที่แสดงข้อมูลหลายชุดจากหลายกลุ่ม (เช่น แยกตามฐานฝึก/คลินิก) ต้องมีความกว้างคอลัมน์คงที่
+   เท่ากันทุกตาราง ไม่ให้ auto-size ตามเนื้อหาต่างกันไปในแต่ละกลุ่ม */
+.fixedTable{table-layout:fixed}
+.fixedTable th{white-space:normal;word-break:break-word;line-height:1.3}
+.fixedTable td{word-break:break-word}
 /* ---------- ตารางเรียนแยกฐานฝึก ---------- */
 .bsBaseBtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
 .bsCal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
@@ -303,8 +314,9 @@ html[data-theme="dark"]{
 .bsCell .bsnum{font-weight:600;font-size:12px;color:var(--w800)}
 .bsCell .ev{font-size:9.5px}
 /* ---------- ประกาศ (Admin Announcement) ---------- */
-.announceItem{position:relative;background:var(--w50);border:1px solid var(--w400);border-radius:14px;padding:14px 40px 14px 16px;margin-bottom:10px}
+.announceItem{position:relative;background:#fffbea;border:1px solid #ffe58a;border-radius:14px;padding:14px 40px 14px 16px;margin-bottom:10px}
 .announceItem:last-child{margin-bottom:0}
+html[data-theme="dark"] .announceItem{background:#3a2f10;border-color:#7a5f10}
 .announceTopic{font-weight:700;color:var(--w800);margin-bottom:4px}
 .announceInfo{font-size:13.5px;color:var(--text);white-space:pre-wrap;line-height:1.6}
 .announceX{position:absolute;top:10px;right:10px;background:none;border:none;font-size:15px;line-height:1;color:var(--muted);cursor:pointer;padding:4px}
@@ -342,7 +354,12 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
 <div class="wrap">
 
   <div class="card" id="announceCard" style="display:none">
-    <h2>ประกาศ</h2>
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:4px">
+      <h2 style="margin:0;text-align:center">ประกาศ</h2>
+      <button class="btn line iconbtn" id="btnShowAllAnnounce" type="button" title="แสดงประกาศทั้งหมด" aria-label="แสดงประกาศทั้งหมด" style="position:absolute;right:0;top:50%;transform:translateY(-50%);padding:7px 10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+      </button>
+    </div>
     <div id="announceList"></div>
   </div>
 
@@ -526,7 +543,7 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
 <div class="mask" id="mHistory"><div class="modal" style="max-width:780px">
   <div class="mh"><h2>ตรวจสอบประวัติการนัดผู้ป่วย</h2><p class="sub">ดูประวัติการจองยูนิตของนักศึกษาแต่ละคน แยกตามชื่อ-ฐานฝึก</p></div>
   <div class="mb">
-    <h3 style="margin:0 0 8px;font-size:14.5px;color:var(--w800)">การจองล่าสุด (อัปเดตแบบ Real-time)</h3>
+    <h3 style="margin:0 0 8px;font-size:14.5px;color:var(--w800)">การจองล่าสุด</h3>
     <div class="histBoard" id="histBoard"><div class="empty">กำลังโหลดข้อมูล...</div></div>
     <hr style="border:none;border-top:1px dashed var(--line);margin:20px 0">
     <h3 style="margin:0 0 8px;font-size:14.5px;color:var(--w800)">ประวัติการจองยูนิตรายบุคคล</h3>
@@ -909,14 +926,14 @@ async function cloudDeleteTemplate(id){
 function dismissedAnnounceIds(){return sGet("ohc_dismissed_announce",[]);}
 function renderAnnounceCard(){
   if(!$("announceCard"))return;
+  if(!ANNOUNCEMENTS.length){$("announceCard").style.display="none";return;}
+  $("announceCard").style.display="";
   var dismissed=dismissedAnnounceIds();
   var active=ANNOUNCEMENTS.filter(function(a){return dismissed.indexOf(a.id)===-1 && (a.topic||a.information);});
-  if(!active.length){$("announceCard").style.display="none";return;}
-  $("announceCard").style.display="";
-  $("announceList").innerHTML=active.map(function(a){
+  $("announceList").innerHTML=active.length?active.map(function(a){
     return '<div class="announceItem" data-id="'+esc(a.id)+'"><button class="announceX" type="button" data-id="'+esc(a.id)+'" aria-label="ปิด">✕</button>'
       +'<div class="announceTopic">'+esc(a.topic)+'</div><div class="announceInfo">'+esc(a.information)+'</div></div>';
-  }).join("");
+  }).join(""):'<div class="empty">ไม่มีประกาศที่แสดงอยู่ในขณะนี้ — กดปุ่มมุมขวาบนเพื่อแสดงประกาศทั้งหมดอีกครั้ง</div>';
   Array.prototype.forEach.call($("announceList").querySelectorAll(".announceX"),function(btn){
     btn.onclick=function(){
       var id=btn.getAttribute("data-id");
@@ -1032,8 +1049,10 @@ function studentDetail(sName,base){
 function renderHistBoardRows(list){
   if(!list.length) return '<div class="empty">ยังไม่มีการจองในระบบ</div>';
   return list.map(function(b){
-    return '<div class="histBoardRow"><span><b>นศ.ทพ.'+esc(b.sName||"—")+'</b> · ฐานฝึก'+esc(b.base||"—")+' · ยูนิต '+esc(b.unit)+' · '+esc(clinic(b.clinicId).name)+(b.work?(" · "+esc(b.work)):"")+'</span>'
-      +'<span class="histBoardTime">'+esc(thShort(b.date))+" · "+SESS[b.session]+(b.updatedAt?(" · "+stamp(b.updatedAt)):"")+'</span></div>';
+    return '<div class="histBoardRow">'
+      +'<div class="hbrTop"><b>นศ.ทพ.'+esc(b.sName||"—")+'</b><span class="histBoardTime">'+esc(thShort(b.date))+" · "+SESS[b.session]+(b.updatedAt?(" · "+stamp(b.updatedAt)):"")+'</span></div>'
+      +'<div class="hbrDetail">ฐานฝึก'+esc(b.base||"—")+' · ยูนิต '+esc(b.unit)+' · '+esc(clinic(b.clinicId).name)+(b.work?(" · "+esc(b.work)):"")+'</div>'
+      +'</div>';
   }).join("");
 }
 async function refreshHistBoard(){
@@ -1047,8 +1066,11 @@ function renderStudentDashboard(){
       +'<p class="sub" style="margin:0 0 10px">จองยูนิตสำเร็จ <b style="color:var(--w800)">'+d.attended+'</b> จากทั้งหมด <b style="color:var(--w800)">'+d.total+'</b> คาบที่เปิดให้ลงปฏิบัติงานในฐานฝึกนี้</p>';
     var rowsHtml=d.rows.length?d.rows.map(function(r){
       var work=r.bookings.map(function(b){return "ยูนิต "+esc(b.unit)+(b.work?(" · "+esc(b.work)):"");}).join("<br>");
-      return '<div class="histRow '+(r.attended?"att-yes":"att-no")+'"><span><b>'+esc(thShort(r.k))+'</b> · '+SESS[r.s]+' · '+esc(r.subject)+(r.teacher?(' · อาจารย์ผู้ควบคุม: '+esc(r.teacher)):'')+'</span>'
-        +'<span>'+(r.attended?("✅ เข้าปฏิบัติงาน"+(work?("<br>"+work):"")):"❌ ไม่ได้จองยูนิต")+'</span></div>';
+      return '<div class="histRow '+(r.attended?"att-yes":"att-no")+'">'
+        +'<div class="hrTop"><span class="hrWhen"><b>'+esc(thShort(r.k))+'</b> · '+SESS[r.s]+' · '+esc(r.subject)+(r.teacher?(' · อาจารย์ผู้ควบคุม: '+esc(r.teacher)):'')+'</span>'
+        +'<span class="hrStatus">'+(r.attended?"✅ เข้าปฏิบัติงาน":"❌ ไม่ได้จองยูนิต")+'</span></div>'
+        +(r.attended&&work?'<div class="hrDetail">'+work+'</div>':'')
+        +'</div>';
     }).join(""):'<div class="empty">ยังไม่มีคาบที่เปิดให้ลงปฏิบัติงานสำหรับฐานฝึกนี้</div>';
     el.innerHTML=header+'<div class="histRowsWrap">'+rowsHtml+'</div><button class="btn sm" type="button" id="histBackBtn" style="margin-top:12px">← กลับไปที่ตารางรายชื่อ</button>';
     $("histBackBtn").onclick=function(){histSelectedStudent=null;renderStudentDashboard();};
@@ -1060,11 +1082,11 @@ function renderStudentDashboard(){
   BASES.forEach(function(base){
     var list=(byBase[base]||[]).slice().sort(function(a,b){return a.sName.localeCompare(b.sName,"th");});
     if(!list.length) return;
-    html+='<div class="histBaseGroup"><h3>ฐานฝึก'+esc(base)+'</h3><div class="tw"><table><thead><tr><th>นักศึกษา</th><th>จองสำเร็จ</th><th></th></tr></thead><tbody>'
+    html+='<div class="histBaseGroup"><h3>ฐานฝึก'+esc(base)+'</h3><div class="tw"><table class="fixedTable" style="min-width:480px"><colgroup><col style="width:170px"><col style="width:130px"><col style="width:180px"></colgroup><thead><tr><th style="text-align:left">นักศึกษา</th><th style="text-align:center">จองสำเร็จ</th><th style="text-align:right"></th></tr></thead><tbody>'
       +list.map(function(s){
         var d=studentDetail(s.sName,s.base);
-        return '<tr><td>นศ.ทพ.'+esc(s.sName)+'</td><td>'+d.attended+' / '+d.total+' คาบ</td>'
-          +'<td><button class="btn sm histDetailBtn" type="button" data-name="'+esc(s.sName)+'" data-base="'+esc(s.base)+'">แสดงรายละเอียดการนัด</button></td></tr>';
+        return '<tr><td style="text-align:left">นศ.ทพ.'+esc(s.sName)+'</td><td style="text-align:center">'+d.attended+' / '+d.total+' คาบ</td>'
+          +'<td style="text-align:right"><button class="btn sm histDetailBtn" type="button" data-name="'+esc(s.sName)+'" data-base="'+esc(s.base)+'">แสดงรายละเอียดการนัด</button></td></tr>';
       }).join("")+"</tbody></table></div></div>";
   });
   el.innerHTML=html||'<div class="empty">ยังไม่มีข้อมูลการจองของนักศึกษา</div>';
@@ -1420,7 +1442,9 @@ function renderSum(){
   $("sum").innerHTML=Object.keys(byC).map(function(cid){
     return '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--w800)">'+esc(clinic(cid).name)
      +' <span style="color:var(--muted);font-weight:400;font-size:13px">('+byC[cid].length+" ยูนิต)</span></h3>"
-     +'<div class="tw"><table><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
+     +'<div class="tw"><table class="fixedTable" style="min-width:1240px"><colgroup>'
+     +'<col style="width:60px"><col style="width:60px"><col style="width:150px"><col style="width:110px"><col style="width:150px"><col style="width:80px"><col style="width:100px"><col style="width:170px"><col style="width:110px"><col style="width:120px"><col style="width:80px"><col style="width:50px">'
+     +'</colgroup><thead><tr><th>ยูนิต</th><th>ชั้นปี</th><th>ชื่อ-นามสกุล นศ.</th><th>ฐานฝึก</th><th>ผู้ป่วย</th><th>HN</th><th>สิทธิการรักษา</th><th>งานที่ทำ</th><th>Assistant</th><th>หมายเหตุ</th><th>สถานะ</th><th>บันทึกล่าสุด</th></tr></thead><tbody>'
      +byC[cid].sort(function(a,b){return a.u-b.u;}).map(function(r){var b=r.b,ok=statusOf(b)==="book";
        var hi=SUM_HIST.length; SUM_HIST.push(b);
        return "<tr><td><b>"+r.u+"</b></td><td>"+esc(b.grade)+"</td><td>นศ.ทพ."+esc(b.sName)+"</td><td>"+esc(b.base)+"</td>"
@@ -1482,8 +1506,8 @@ function updateEmergUI(){
   if(special){
     $("fPName").value="";$("fHN").value="";$("fRight").value="";
     if(emerg) $("fWork").value="ขอรับ Emergency case";
-    else if($("fWalkinType").value==="screening") $("fWork").value="ขอรับ Screening chart (walk-in)";
-    else if($("fWalkinType").value==="comprehensive") $("fWork").value="ขอรับ Comprehensive chart (walk-in)";
+    else if($("fWalkinType").value==="screening") $("fWork").value="ขอรับเคส walk-in (screening)";
+    else if($("fWalkinType").value==="comprehensive") $("fWork").value="ขอรับเคส walk-in (comprehensive)";
     else $("fWork").value="";
   }else if($("fWork").value==="ขอรับ Emergency case"||/walk-in\)/.test($("fWork").value)) $("fWork").value="";
   $("fWorkReq").style.display=special?"none":"";
@@ -2033,6 +2057,7 @@ try{
   $("bSaveAnn").onclick=async function(){
     try{ await cloudSaveAnnouncements(); closeM("mAnnounce"); renderAnnounceCard(); alert("บันทึกประกาศเรียบร้อย"); }catch(e){ showErr(e); }
   };
+  $("btnShowAllAnnounce").onclick=function(){ sSet("ohc_dismissed_announce",[]); renderAnnounceCard(); };
   $("btnMenu").onclick=function(e){e.stopPropagation();$("menuDrop").classList.toggle("on");};
   Array.prototype.forEach.call(document.querySelectorAll("#menuDrop .menuItem"),function(mi){
     mi.addEventListener("click",function(){$("menuDrop").classList.remove("on");});});
