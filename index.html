@@ -280,7 +280,11 @@ html[data-theme="dark"]{
 .btn.primary:hover{box-shadow:0 8px 22px rgba(91,35,125,.42)}
 .cell.today .num{box-shadow:0 3px 10px rgba(91,35,125,.4)}
 
-/* ---------- ตรวจสอบประวัติการนัดผู้ป่วย ---------- */
+.cardIconBtn{position:relative;width:36px;height:36px;border-radius:50%;border:1px solid var(--w400);background:var(--w50);color:var(--w800);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0;transition:transform .25s var(--ease),background-color .2s,box-shadow .25s var(--ease),border-color .2s}
+.cardIconBtn:hover{background:var(--w100);box-shadow:var(--sh);transform:translateY(-1px) scale(1.07)}
+.cardIconBtn:active{transform:scale(.9);transition-duration:.12s}
+html[data-theme="dark"] .cardIconBtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+html[data-theme="dark"] .cardIconBtn:hover{background:rgba(255,255,255,.16)}
 .histBoard{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:14px}
 .histBoardRow{padding:10px 14px;border-bottom:1px dashed var(--line);font-size:13px}
 .histBoardRow:last-child{border-bottom:none}
@@ -356,7 +360,7 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
   <div class="card" id="announceCard" style="display:none">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:4px">
       <h2 style="margin:0;text-align:center">ประกาศ</h2>
-      <button class="btn line iconbtn" id="btnShowAllAnnounce" type="button" title="แสดงประกาศทั้งหมด" aria-label="แสดงประกาศทั้งหมด" style="position:absolute;right:0;top:50%;transform:translateY(-50%);padding:7px 10px">
+      <button class="cardIconBtn" id="btnShowAllAnnounce" type="button" title="แสดงประกาศทั้งหมด" aria-label="แสดงประกาศทั้งหมด" style="position:absolute;right:0;top:50%;margin-top:-18px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
       </button>
     </div>
