@@ -469,6 +469,12 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
           <select id="fWalkinType" class="inp"><option value="">— เลือกประเภท —</option><option value="screening">Screening chart</option><option value="comprehensive">Comprehensive chart</option></select>
         </div>
       </div>
+      <div class="f" id="fOtherWrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="fOther" style="width:17px;height:17px">
+          งานอื่น ๆ (ไม่ต้องระบุชื่อผู้ป่วย/HN/สิทธิการรักษา — แต่ต้องกรอกรายละเอียดงานที่ทำ)
+        </label>
+      </div>
       <div class="f"><label>ชื่อ-นามสกุลผู้ป่วย <span class="hint" id="fPNameHint">(หากเว้นว่าง → รอยืนยัน)</span></label>
         <div class="rp"><select id="fPPfx" class="inp"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กหญิง</option><option>เด็กชาย</option></select>
         <input id="fPName" class="inp" placeholder="ชื่อ-นามสกุลผู้ป่วย"></div></div>
@@ -1498,29 +1504,33 @@ function updateEmergUI(){
   var isDiag=editK&&isDiagClinic(editK.c);
   var emerg=$("fEmerg").checked;
   var walkin=isDiag&&$("fWalkin").checked;
-  var special=emerg||walkin, ed=canEdit(curKey);
+  var other=$("fOther").checked;
+  var special=emerg||walkin||other, autoWork=emerg||walkin, ed=canEdit(curKey);
   $("fWalkinWrap").style.display=isDiag?"":"none";
   $("fWalkinTypeWrap").style.display=walkin?"":"none";
   $("fWalkinType").disabled=!walkin||!ed;
   $("fEmergWrap").style.display=EMERG_CLINICS.indexOf(editK?editK.c:"")>-1?"":"none";
   $("fEmerg").disabled=!ed||isDiag;
+  $("fOther").disabled=!ed;
   $("fPName").disabled=special||!ed;
   $("fHN").disabled=special||!ed;
   $("fPPfx").disabled=special||!ed;
   $("fRight").disabled=special||!ed;
-  $("fWork").disabled=special||!ed;
+  $("fWork").disabled=autoWork||!ed;
   if(special){
     $("fPName").value="";$("fHN").value="";$("fRight").value="";
+  }
+  if(autoWork){
     if(emerg) $("fWork").value="ขอรับ Emergency case";
     else if($("fWalkinType").value==="screening") $("fWork").value="ขอรับเคส walk-in (screening)";
     else if($("fWalkinType").value==="comprehensive") $("fWork").value="ขอรับเคส walk-in (comprehensive)";
     else $("fWork").value="";
   }else if($("fWork").value==="ขอรับ Emergency case"||/walk-in\)/.test($("fWork").value)) $("fWork").value="";
-  $("fWorkReq").style.display=special?"none":"";
+  $("fWorkReq").style.display=autoWork?"none":"";
   $("fPNameHint").textContent=special?"(ไม่ต้องกรอก)":"(หากเว้นว่าง → รอยืนยัน)";
   $("fHNHint").textContent=special?"(ไม่ต้องกรอก)":"(ตัวเลข, หากเว้นว่าง → รอยืนยัน)";
   $("fRightHint").textContent=special?"(ไม่ต้องกรอก)":"(หากเว้นว่าง → รอยืนยัน)";
-  $("fWorkEmergHint").textContent=emerg?"(กรอกอัตโนมัติ — Emergency case)":walkin?"(กรอกอัตโนมัติ — Walk-in case)":"";
+  $("fWorkEmergHint").textContent=emerg?"(กรอกอัตโนมัติ — Emergency case)":walkin?"(กรอกอัตโนมัติ — Walk-in case)":other?"(จำเป็นต้องกรอก — งานอื่น ๆ)":"";
 }
 
 function updatePedoLive(){
@@ -1557,9 +1567,11 @@ async function openBook(cid,u){
   $("fEmerg").checked=!!(b&&b.emergency);
   $("fWalkin").checked=!!(b&&b.caseType&&b.caseType.indexOf("walkin_")===0);
   $("fWalkinType").value=(b&&b.caseType==="walkin_screening")?"screening":(b&&b.caseType==="walkin_comprehensive")?"comprehensive":"";
+  $("fOther").checked=!!(b&&b.caseType==="other");
   $("fEmerg").onchange=updateEmergUI;
   $("fWalkin").onchange=updateEmergUI;
   $("fWalkinType").onchange=updateEmergUI;
+  $("fOther").onchange=updateEmergUI;
   renderWorkHint(cid);
   $("fWork").oninput=updatePedoLive;
   updatePedoLive();
@@ -1600,15 +1612,16 @@ async function saveBooking(){
   function g(id){return $(id).value.trim();}
   var isEmerg=EMERG_CLINICS.indexOf(c)>-1 && $("fEmerg").checked;
   var isWalkin=isDiagClinic(c) && $("fWalkin").checked;
+  var isOther=$("fOther").checked;
   var walkinType=isWalkin?$("fWalkinType").value:"";
   if(isWalkin&&!walkinType){alert("กรุณาเลือกประเภท Walk-in");return;}
-  var caseType=isEmerg?"emergency":isWalkin?"walkin_"+walkinType:"";
+  var caseType=isEmerg?"emergency":isWalkin?"walkin_"+walkinType:isOther?"other":"";
   var isRsv=isReservedClinic(clinic(c));
   var subjectClinicId=g("fSubject");
   var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:isEmerg?"-":g("fPPfx"),pName:isEmerg?"-":g("fPName"),
     hn:isEmerg?"-":g("fHN").replace(/\D/g,""),right:isEmerg?"-":g("fRight"),work:isEmerg?"ขอรับ Emergency case":g("fWork"),assist:g("fAssist"),
     emergency:isEmerg,caseType:caseType,note:g("fNote"),subjectClinicId:subjectClinicId};
-  if(!d.grade||!d.base||!d.sName||(!caseType&&!d.work)||(isRsv&&!subjectClinicId)){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
+  if(!d.grade||!d.base||!d.sName||((!isEmerg&&!isWalkin)&&!d.work)||(isRsv&&!subjectClinicId)){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
   if(c===PEDO_ID){
     var cat=pedoCat(d.work);
     if(cat.other && !d.assist){alert("หัตถการ Class II / Pulp treatment / SSC จำเป็นต้องกรอกชื่อ Assistant ก่อนบันทึก");return;}
