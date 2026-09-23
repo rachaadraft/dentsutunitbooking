@@ -1196,6 +1196,7 @@ function thShort(k){var d=parseK(k);return pad(d.getDate())+"/"+pad(d.getMonth()
 function stamp(v){var d=new Date(v);return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+(d.getFullYear()+543)+" "+pad(d.getHours())+":"+pad(d.getMinutes())+" น.";}
 function dlText(d){return "วัน"+TH_D[d.getDay()]+"ที่ "+d.getDate()+" "+TH_M[d.getMonth()]+" "+(d.getFullYear()+543)+" เวลา "+pad(d.getHours())+":"+pad(d.getMinutes())+" น.";}
 function clinic(id){for(var i=0;i<CLINICS.length;i++)if(CLINICS[i].id===id)return CLINICS[i];return {id:id,name:id,units:[]};}
+function isDiagClinic(cid){var nm=(clinic(cid).name||"").trim().toLowerCase();return nm==="diag";}
 function isReservedClinic(c){return !!(c&&/^reserved\b/i.test(String(c.name||"").trim()));}
 function reservedClinicsSched(k,s){return sched(k)[s].map(clinic).filter(isReservedClinic);}
 function borrowedUnitsFor(targetCid,k,s){ /* ยูนิตของคลินิกใดๆ ในคาบนี้ ที่ถูกยกให้วิชา targetCid ใช้เป็นฐานเสริม (ทุกยูนิตเป็นยูนิตสำรองให้กันได้อิสระ) */
@@ -1494,7 +1495,7 @@ function renderWorkHint(cid){
   }
 }
 function updateEmergUI(){
-  var isDiag=editK&&editK.c==="diag";
+  var isDiag=editK&&isDiagClinic(editK.c);
   var emerg=$("fEmerg").checked;
   var walkin=isDiag&&$("fWalkin").checked;
   var special=emerg||walkin, ed=canEdit(curKey);
@@ -1598,7 +1599,7 @@ async function saveBooking(){
   if(!canEdit(k)){alert("ปิดรับการจองแล้ว ไม่สามารถบันทึกได้");return;}
   function g(id){return $(id).value.trim();}
   var isEmerg=EMERG_CLINICS.indexOf(c)>-1 && $("fEmerg").checked;
-  var isWalkin=c==="diag" && $("fWalkin").checked;
+  var isWalkin=isDiagClinic(c) && $("fWalkin").checked;
   var walkinType=isWalkin?$("fWalkinType").value:"";
   if(isWalkin&&!walkinType){alert("กรุณาเลือกประเภท Walk-in");return;}
   var caseType=isEmerg?"emergency":isWalkin?"walkin_"+walkinType:"";
