@@ -1568,10 +1568,10 @@ async function openBook(cid,u){
   $("fWalkin").checked=!!(b&&b.caseType&&b.caseType.indexOf("walkin_")===0);
   $("fWalkinType").value=(b&&b.caseType==="walkin_screening")?"screening":(b&&b.caseType==="walkin_comprehensive")?"comprehensive":"";
   $("fOther").checked=!!(b&&b.caseType==="other");
-  $("fEmerg").onchange=updateEmergUI;
-  $("fWalkin").onchange=updateEmergUI;
+  $("fEmerg").onchange=function(){if($("fEmerg").checked){$("fWalkin").checked=false;$("fOther").checked=false;}updateEmergUI();};
+  $("fWalkin").onchange=function(){if($("fWalkin").checked){$("fEmerg").checked=false;$("fOther").checked=false;}updateEmergUI();};
   $("fWalkinType").onchange=updateEmergUI;
-  $("fOther").onchange=updateEmergUI;
+  $("fOther").onchange=function(){if($("fOther").checked){$("fEmerg").checked=false;$("fWalkin").checked=false;}updateEmergUI();};
   renderWorkHint(cid);
   $("fWork").oninput=updatePedoLive;
   updatePedoLive();
