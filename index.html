@@ -281,6 +281,10 @@ html[data-theme="dark"]{
 .btn.primary:hover{box-shadow:0 8px 22px rgba(91,35,125,.42)}
 .cell.today .num{box-shadow:0 3px 10px rgba(91,35,125,.4)}
 
+.themeSwitch{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:3px;gap:2px;flex:none;backdrop-filter:blur(6px)}
+.themeSwitchBtn{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:rgba(255,255,255,.75);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background-color .25s var(--ease),color .25s var(--ease),transform .2s var(--ease)}
+.themeSwitchBtn:active{transform:scale(.88)}
+.themeSwitchBtn.active{background:#fff;color:#1d1d1f}
 .cardIconBtn{position:relative;width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--w800);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0;transition:transform .25s var(--ease)}
 .cardIconBtn:hover{transform:translateY(-1px) scale(1.07)}
 .cardIconBtn:active{transform:scale(.9);transition-duration:.12s}
@@ -344,13 +348,20 @@ textarea.inp,#fNote{width:100%;max-width:100%;resize:vertical;overflow:auto}
   <div><h1>Dental Unit Booking System</h1>
     <p>Institute of Dentistry, Suranaree University of Technology</p></div>
   <div class="spacer"></div>
+  <div class="themeSwitch" id="themeSwitch" role="group" aria-label="สลับโหมดสี">
+    <button type="button" class="themeSwitchBtn" id="btnThemeLight" aria-label="โหมดสว่าง" title="โหมดสว่าง">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line></svg>
+    </button>
+    <button type="button" class="themeSwitchBtn" id="btnThemeDark" aria-label="โหมดมืด" title="โหมดมืด">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+  </div>
   <div class="menuWrap" id="menuWrap">
     <button class="btn line iconbtn" id="btnMenu" type="button" title="เมนู" aria-label="เมนู">☰</button>
     <div class="menuDrop" id="menuDrop">
       <button class="menuItem" id="btnFloor" type="button">ภาพรวมคลินิกรายชั้น</button>
       <button class="menuItem" id="btnHistory" type="button">ตรวจสอบประวัติการนัดผู้ป่วย</button>
       <button class="menuItem" id="btnBaseSched" type="button">ตารางเรียนแยกฐานฝึก</button>
-      <button class="menuItem" id="btnTheme" type="button">สลับโหมดสี</button>
       <button class="menuItem" id="btnAdmin" type="button">เข้าสู่ระบบผู้ดูแล</button>
     </div>
   </div>
@@ -882,12 +893,18 @@ var isAdmin=sGet("ohc_admin",false)===true;
 var curTheme=sGet("ohc_theme","light");
 function applyTheme(){
   document.documentElement.setAttribute("data-theme",curTheme);
+  if($("btnThemeLight")&&$("btnThemeDark")){
+    $("btnThemeLight").classList.toggle("active",curTheme==="light");
+    $("btnThemeDark").classList.toggle("active",curTheme==="dark");
+  }
 }
-function toggleTheme(){
-  curTheme=(curTheme==="dark"?"light":"dark");
+function setTheme(t){
+  if(curTheme===t) return;
+  curTheme=t;
   sSet("ohc_theme",curTheme);
   applyTheme();
 }
+function toggleTheme(){ setTheme(curTheme==="dark"?"light":"dark"); }
 applyTheme();
 
 /* ==========================================================================
@@ -2050,7 +2067,8 @@ try{
   $("nextM").onclick=async function(){VM++;if(VM>11){VM=0;VY++;}
     if(sb){try{await loadCalendarWindow();}catch(e){showErr(e);}} renderCal();};
   $("btnToday").onclick=function(){var n=firstWeekday(new Date());selectDay(key(n));};
-  $("btnTheme").onclick=toggleTheme;
+  $("btnThemeLight").onclick=function(){setTheme("light");};
+  $("btnThemeDark").onclick=function(){setTheme("dark");};
   $("btnFloor").onclick=openFloorOverview;
   $("btnHistory").onclick=openHistoryModal;
   $("btnBaseSched").onclick=openBaseSchedModal;
