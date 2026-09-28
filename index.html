@@ -768,6 +768,14 @@ async function writeClinicDuty(k,s,clinicId,teacherId,baseName){
   return true;
 }
 function teacherName(id){for(var i=0;i<TEACHERS.length;i++)if(TEACHERS[i].id===id)return TEACHERS[i].name;return "";}
+function teacherFirstName(fullName){
+  var s=(fullName||"").trim();
+  if(!s) return "";
+  var parts=s.split(/\s+/);
+  var namePart=parts.length>1?parts.slice(0,-1).join(" "):parts[0];
+  var dot=namePart.lastIndexOf(".");
+  return (dot>-1?namePart.slice(dot+1):namePart).trim();
+}
 /* ---------- ค้นหาอาจารย์แบบ real-time (ใช้ที่ dropdown "อาจารย์ผู้ควบคุม") ---------- */
 function teacherComboItems(query){
   var q=(query||"").trim().toLowerCase();
@@ -1641,8 +1649,8 @@ async function saveBooking(){
   var caseType=isEmerg?"emergency":isWalkin?"walkin_"+walkinType:isOther?"other":"";
   var isRsv=isReservedClinic(clinic(c));
   var subjectClinicId=g("fSubject");
-  var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:isEmerg?"-":g("fPPfx"),pName:isEmerg?"-":g("fPName"),
-    hn:isEmerg?"-":g("fHN").replace(/\D/g,""),right:isEmerg?"-":g("fRight"),work:isEmerg?"ขอรับ Emergency case":g("fWork"),assist:g("fAssist"),
+  var d={grade:g("fGrade"),base:g("fBase"),sName:g("fSName"),pPfx:isEmerg?"":g("fPPfx"),pName:isEmerg?"":g("fPName"),
+    hn:isEmerg?"":g("fHN").replace(/\D/g,""),right:isEmerg?"":g("fRight"),work:isEmerg?"ขอรับ Emergency case":g("fWork"),assist:g("fAssist"),
     emergency:isEmerg,caseType:caseType,note:g("fNote"),subjectClinicId:subjectClinicId};
   if(!d.grade||!d.base||!d.sName||((!isEmerg&&!isWalkin)&&!d.work)||(isRsv&&!subjectClinicId)){alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");return;}
   if(c===PEDO_ID){
@@ -1983,7 +1991,7 @@ function paperRowsHtml(k,s,rs,tduty){
   var groups=groupForPaper(rs),out="";
   groups.forEach(function(grp){
     var tn=clinicDutyTeacher(tduty,k,s,grp.cid);
-    var clinicLabel=esc(clinic(grp.cid).name)+(tn?("."+esc(tn)):"");
+    var clinicLabel=esc(clinic(grp.cid).name)+(tn?(" อ."+esc(teacherFirstName(tn))):"");
     var clinicCellDone=false;
     grp.grades.forEach(function(gset){
       gset.rows.forEach(function(r,idx){
